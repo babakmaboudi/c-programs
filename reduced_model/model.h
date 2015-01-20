@@ -40,6 +40,8 @@ class Model
 		Matrix Phi;
 		Matrix Psi;
 		Matrix P;
+		Matrix F_tilde;
+		vector<int> P_list;
 	public:
 		void sv2oe(double*,double*,double*);		// State vector to orbital elements 
 		void discrete_empirical_interpolation(Matrix*,Matrix*);

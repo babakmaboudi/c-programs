@@ -51,3 +51,25 @@ vector<double> linspace(double min, double max, int n)
 	return result;
 }
 
+void prog_bar(int current, int total)
+{
+	int bar_width = 30;
+	total--;
+	int progress = static_cast<double> (current) / total * bar_width;
+
+	cout << '\xd';
+	cout << '[';
+	for(int i = 0 ; i < progress ; i++)
+		cout << '#';
+	for(int i = 0 ; i < (bar_width - progress) ; i++)
+		cout << " ";
+	cout << ']';
+	
+	int percent = static_cast<double> (current) / total * 100;
+
+	cout << " - " << percent << '%';
+
+	if(current == (total) )
+		cout << endl;
+}
+

@@ -34,6 +34,7 @@ void Model::discrete_empirical_interpolation(Matrix* P, Matrix* mat)
 	Matrix col = mat->get_col(0);
 	
 	arg_opt(&dummy,&arg_max,&col,'b');
+	P_list.push_back(arg_max);
 
 	int nrows,ncols;
 	mat->get_size(&nrows,&ncols);
@@ -50,6 +51,7 @@ void Model::discrete_empirical_interpolation(Matrix* P, Matrix* mat)
 		c = (P->tr() * U).inv() * P->tr() * col;
 		r = col - U*c;
 		arg_opt(&dummy,&arg_max,&r,'b');
+		P_list.push_back(arg_max);
 		U.add_col(col);
 		P->add_col(z);
 		P->at(arg_max,i) = 1;
@@ -206,10 +208,38 @@ void Model::dynamic_reduced(Matrix* dy, double t, Matrix* y)
 {
 	Matrix u,non_lin;
 	u = Phi * (*y);
-
+/*
 	non_lin.zeros(6,1);
 	nonlinear(&non_lin,t,&u);
 	(*dy) = A_tilde*(*y) + Phi.tr()*non_lin;
+*/
+	double coef = - mu / pow( pow(u.at(0,0),2) + pow(u.at(1,0),2) + pow(u.at(2,0),2) , 1.5 );
+	non_lin.zeros(P_list.size() , 1);
+	for(int i = 0 ; i < P_list.size() ; i++)
+	{
+		switch( P_list[i] )
+		{
+			case 0:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 1:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 2:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 3:
+				non_lin.at( i , 0 ) = coef * u.at(0,0);
+				break;
+			case 4:
+				non_lin.at( i , 0 ) = coef * u.at(1,0);
+				break;
+			case 5:
+				non_lin.at( i , 0 ) = coef * u.at(2,0);
+				break;
+		}
+	}
+	(*dy) = A_tilde*(*y) + F_tilde * non_lin;
 }
 
 void Model::compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*),vector<double>* result, double t, vector<double> current)
@@ -300,7 +330,7 @@ void Model::build_reduced_model(int N, double tol)
 	vector< vector<double> > Y;
 	vector<double> T;
 
-	int d = 3;		//dimension of the random space
+	int d = 5;		//dimension of the random space
 	vector<double> linear_space;
 	linear_space = linspace(-0.5,0.5,N);
 
@@ -317,12 +347,13 @@ void Model::build_reduced_model(int N, double tol)
 	init_cond.zeros(6,1);
 	for(int i = 0 ; i < random_space.size() ; i++)
 	{
-		init_cond.at(0,0) = X0[0] + 1000*(random_space[i])[1] ;
-		init_cond.at(1,0) = X0[1] + 1000*(random_space[i])[2] ;
-		init_cond.at(2,0) = X0[2] + 1000*(random_space[i])[3] ;
-		init_cond.at(3,0) = V0[0] ;
-		init_cond.at(4,0) = V0[1] ;
-		init_cond.at(5,0) = V0[2] ;
+		prog_bar(i,random_space.size());
+		init_cond.at(0,0) = X0[0] + 100*(random_space[i])[0];
+		init_cond.at(1,0) = X0[1] + 100*(random_space[i])[1];
+		init_cond.at(2,0) = X0[2] + 100*(random_space[i])[2];
+		init_cond.at(3,0) = V0[0] + (random_space[i])[3];
+		init_cond.at(4,0) = V0[1] + (random_space[i])[4];
+		init_cond.at(5,0) = V0[2];
 
 		Y.clear();
 		T.clear();
@@ -353,18 +384,12 @@ void Model::build_reduced_model(int N, double tol)
 		}
 	}
 
-	char source[] = "./data/all_result.txt";
-	write_file(&snapshots,source);
-
 	Matrix M;
 	M.initiate_vector_vector(snapshots);
 	M = M.tr();
 	vector< vector<double> > U,V;
 	vector<double> S;
 	M.svd(&U,&S,&V);
-
-	char path[] = "./data/U.txt";
-	this->write_file(&U,path);
 
 	double total_phi = 0;
 	for(int i = 0 ; i < S.size() ; i++)
@@ -426,9 +451,7 @@ void Model::test_reduced_model()
 
 	this->build_reduced_model(N,tol);
 	A_tilde = Phi.tr() * A * Phi;
-
-	cout << Phi << endl;
-	cout << A_tilde << endl;	
+	F_tilde = Phi.tr() * Psi * ( P.tr() * Psi ).inv();
 
 	srand(2);
 	double* random_vec = new double[6];
@@ -440,28 +463,15 @@ void Model::test_reduced_model()
 	}
 
 	vector<double> ic;
-	ic.push_back( X0[0] + 1000*random_vec[0]);
-	ic.push_back( X0[1] + 1000*random_vec[1]);
-	ic.push_back( X0[2] + 1000*random_vec[2]);
-	ic.push_back( V0[0] );
-	ic.push_back( V0[1] );
-	ic.push_back( V0[2] );
+	ic.push_back( X0[0] + 100*random_vec[0]);
+	ic.push_back( X0[1] + 100*random_vec[1]);
+	ic.push_back( X0[2] + 100*random_vec[2]);
+	ic.push_back( V0[0] + random_vec[3]);
+	ic.push_back( V0[1] + random_vec[4]);
+	ic.push_back( V0[2]);
 	Matrix init_cond,init_cond_red;
 	init_cond.initiate_vector(ic,6,1);
 	init_cond_red = Phi.tr() * init_cond;
-
-// ----------------
-//	char path1[] = "./data/phi.txt";
-//	char path2[] = "./data/init_cond.txt";
-//	char path3[] = "./data/init_cond_red.txt";
-//	Phi.save(path1);
-//	init_cond.save(path2);
-//	init_cond_red.save(path3);
-//	Matrix test;
-//	test = init_cond - (Phi * init_cond_red);
-//
-//	cout << "This is the difference :" << endl << test << endl;
-// ----------------
 
 	explicit_rk6(func,tspan,init_cond_red,h,&Y,&T,MAX_ITER);
 
@@ -477,8 +487,8 @@ void Model::test_reduced_model()
 		result.add_row(vec.tr());
 	}
 
-	char path[] = "./data/result.txt";
-	result.save(path);
+	char path1[] = "./data/result.txt";
+	result.save(path1);
 
 	void (Model::*func2)(Matrix*,double,Matrix*) = &Model::dynamic_3d;
 	vector< vector<double> > exact;
@@ -487,7 +497,6 @@ void Model::test_reduced_model()
 
 	char path2[] = "./data/result_exact.txt";
 	write_file(&exact,path2);
-	
 }
 
 void Model::single_sat(double* rand_vec, int len)
