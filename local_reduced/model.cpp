@@ -180,69 +180,55 @@ void Model::write_matrix(Matrix* y, double t, vector<vector<double> >* mat, vect
 	time->push_back( t );
 }
 
-void Model::dynamic_3d(Matrix* dy, double t, Matrix* y)
+void Model::dynamic_3d_param(Matrix* dy, double t, Matrix* y, Parameters* param)
 {
 	vector<double> temp;
-	double coef = - mu / pow( pow(y->at(0,0),2) + pow(y->at(1,0),2) + pow(y->at(2,0),2) , 1.5 );
+	double coef = - (*param).mu / pow( pow(y->at(0,0),2) + pow(y->at(1,0),2) + pow(y->at(2,0),2) , 1.5 );
+	vector<double> polar = get_polar_coord(y);
+	double phi = polar[1];
+	double coef2 = -param->mu * pow(ae,2) * J2 / (2 * pow(polar[0],5));
 	dy->at(0,0) = y->at(3,0);
 	dy->at(1,0) = y->at(4,0);
 	dy->at(2,0) = y->at(5,0);
+	// Earth Gravity 
 	dy->at(3,0) = coef * y->at(0,0);
+	// Earth Oblateness
+	dy->at(3,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(0,0);
+	// Earth Gravity
 	dy->at(4,0) = coef * y->at(1,0);
-	dy->at(5,0) = coef * y->at(2,0);
+	// Earth Oblateness
+	dy->at(4,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
+	// Earth Gravity
+	dy->at(5,0) = coef * y->at(2,0);	
+	// Earth Oblateness
+	dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
 }
 
-void Model::nonlinear(Matrix* dy, double t, Matrix* y)
+void Model::nonlinear(Matrix* dy, double t, Matrix* y,Parameters* param)
 {
 	vector<double> temp;
-	double coef = - mu / pow( pow(y->at(0,0),2) + pow(y->at(1,0),2) + pow(y->at(2,0),2) , 1.5 );
+	double coef = - param->mu / pow( pow(y->at(0,0),2) + pow(y->at(1,0),2) + pow(y->at(2,0),2) , 1.5 );
+	vector<double> polar = get_polar_coord(y);
+	double phi = polar[1];
+	double coef2 = -param->mu * pow(ae,2) * J2 / (2*pow(polar[0],5));
 	dy->at(0,0) = 0;
 	dy->at(1,0) = 0;
 	dy->at(2,0) = 0;
+	// Earth Gravity
 	dy->at(3,0) = coef * y->at(0,0);
+	// Earth Oblateness
+	dy->at(3,0) += coef2 * (-15 * pow( sin(phi) , 2 ) + 3 ) * y->at(0,0);
+	// Earth Gravity
 	dy->at(4,0) = coef * y->at(1,0);
+	// Earth Oblateness
+	dy->at(4,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
+	// Earth Gravity
 	dy->at(5,0) = coef * y->at(2,0);
+	// Earth Oblateness
+	dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
 }
 
-void Model::dynamic_reduced(Matrix* dy, double t, Matrix* y)
-{
-	Matrix u,non_lin;
-	u = Phi * (*y);
-/*
-	non_lin.zeros(6,1);
-	nonlinear(&non_lin,t,&u);
-	(*dy) = A_tilde*(*y) + Phi.tr()*non_lin;
-*/
-	double coef = - mu / pow( pow(u.at(0,0),2) + pow(u.at(1,0),2) + pow(u.at(2,0),2) , 1.5 );
-	non_lin.zeros(P_list.size() , 1);
-	for(int i = 0 ; i < P_list.size() ; i++)
-	{
-		switch( P_list[i] )
-		{
-			case 0:
-				non_lin.at( i , 0 ) = 0;
-				break;
-			case 1:
-				non_lin.at( i , 0 ) = 0;
-				break;
-			case 2:
-				non_lin.at( i , 0 ) = 0;
-				break;
-			case 3:
-				non_lin.at( i , 0 ) = coef * u.at(0,0);
-				break;
-			case 4:
-				non_lin.at( i , 0 ) = coef * u.at(1,0);
-				break;
-			case 5:
-				non_lin.at( i , 0 ) = coef * u.at(2,0);
-				break;
-		}
-	}
-	(*dy) = A_tilde*(*y) + F_tilde * non_lin;
-}
-
-void Model::compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*),vector<double>* result, double t, vector<double> current)
+void Model::compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),vector<double>* result, double t, vector<double> current, Parameters* param)
 {
 	Matrix state, nonlinear_state;
 	state.zeros(6,1);
@@ -251,14 +237,14 @@ void Model::compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*),v
 
 	for(int i = 0 ; i < current.size() ; i++)
 		state.at(i,0) = current[i];
-	(this->*func)(&nonlinear_state,t,&state);
+	(this->*func)(&nonlinear_state,t,&state,param);
 	int nrows,ncols;
 	nonlinear_state.get_size(&nrows,&ncols);
 	for(int i = 0 ; i < nrows ; i++)
 		result->push_back( nonlinear_state.at(i,0) );
 }
 
-void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*),double* tspan, Matrix init_cond, double h, vector<vector<double> >* Y, vector<double>* T,int MAX_ITER)
+void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),double* tspan, Matrix init_cond, Parameters* param, double h, vector<vector<double> >* Y, vector<double>* T,int MAX_ITER)
 
 {
 	double t = tspan[0];
@@ -279,36 +265,36 @@ void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*),double* tsp
 
 	for(int j = 1 ; j < MAX_ITER ; j++)
 	{
-		(this->*func)(&k1,t,&current);
+		(this->*func)(&k1,t,&current,param);
 		k1 = k1.scalar(h);
 		
 		temp = current + k1;
-		(this->*func)(&k2,t+h,&temp);
+		(this->*func)(&k2,t+h,&temp,param);
 		k2 = k2.scalar(h);
 
 		temp = k1.scalar(3) + k2;
 		temp = current + temp.scalar(static_cast<double>(1)/8);
-		(this->*func)(&k3,t+h/2,&temp);
+		(this->*func)(&k3,t+h/2,&temp,param);
 		k3 = k3.scalar(h);
 
 		temp = k1.scalar(8) + k2.scalar(2) + k3.scalar(8);
 		temp = current + temp.scalar(static_cast<double>(1)/27);
-		(this->*func)(&k4,t+2*h/3,&temp);
+		(this->*func)(&k4,t+2*h/3,&temp,param);
 		k4 = k4.scalar(h);
 
 		temp = k1.scalar( (3*(3*sqrt(21) - 7) )) + k2.scalar( -8*(7-sqrt(21)) ) + k3.scalar( 48*(7 - sqrt(21)) ) + k4.scalar( -3*(21 - sqrt(21)) );
 		temp = current + temp.scalar(static_cast<double>(1)/392);
-		(this->*func)(&k5,t + (7 - sqrt(21))*h/14,&temp);
+		(this->*func)(&k5,t + (7 - sqrt(21))*h/14,&temp,param);
 		k5 = k5.scalar(h);
 
 		temp = k1.scalar( -5*(231 + 51*sqrt(21)) ) + k2.scalar( -40*(7 + sqrt(21)) ) + k3.scalar( -320*sqrt(21) ) + k4.scalar( 3*(21 + 121*sqrt(21)) ) + k5.scalar( 392*(6 + sqrt(21)) );
 		temp = current + temp.scalar(static_cast<double>(1)/1960);
-		(this->*func)(&k6,t + (7 + sqrt(21))*h/14,&temp);
+		(this->*func)(&k6,t + (7 + sqrt(21))*h/14,&temp,param);
 	
 		k6 = k6.scalar(h);
 		temp = k1.scalar( 15*(22+7*sqrt(21)) ) + k2.scalar( 120 ) + k3.scalar( 40*( 7*sqrt(21) - 5 ) ) + k4.scalar( -63*(3*sqrt(21) - 2) ) + k5.scalar( - 14*(49+9*sqrt(21)) ) + k6.scalar( 70*( 7 - sqrt(21)) );
 		temp = current + temp.scalar(static_cast<double>(1)/180);
-		(this->*func)(&k7,t + h,&temp);
+		(this->*func)(&k7,t + h,&temp,param);
 		k7 = k7.scalar(h);
 
 		temp = k1.scalar(9) + k3.scalar(64) + k5.scalar(49) + k6.scalar(49) + k7.scalar(9);
@@ -319,9 +305,9 @@ void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*),double* tsp
 	}
 }
 
-void Model::build_reduced_model(int N, double tol)
+void Model::BRM_params()
 {
-	void (Model::*func)(Matrix*,double,Matrix*) = &Model::dynamic_3d;
+	void (Model::*func)(Matrix*,double,Matrix*,Parameters*) = &Model::dynamic_3d_param;
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
@@ -330,9 +316,9 @@ void Model::build_reduced_model(int N, double tol)
 	vector< vector<double> > Y;
 	vector<double> T;
 
-	int d = 6;		//dimension of the random space
+	int d = 1;		//dimension of the random space
 	vector<double> linear_space;
-	linear_space = linspace(-0.5,0.5,N);
+	linear_space = linspace(-0.5,0.5,5);
 
 	Grid grid;
 	for(int i = 0 ; i < d ; i++)
@@ -345,168 +331,52 @@ void Model::build_reduced_model(int N, double tol)
 	vector< vector< vector<double> > > solution;
 	Matrix init_cond;
 	init_cond.zeros(6,1);
+
+	init_cond.at(0,0) = X0[0];
+	init_cond.at(1,0) = X0[1];
+	init_cond.at(2,0) = X0[2];
+	init_cond.at(3,0) = V0[0];
+	init_cond.at(4,0) = V0[1];
+	init_cond.at(5,0) = V0[2];
+
+	Parameters param;
+
 	for(int i = 0 ; i < random_space.size() ; i++)
 	{
-		prog_bar(i,random_space.size());
-		init_cond.at(0,0) = X0[0] + 100*(random_space[i])[0];
-		init_cond.at(1,0) = X0[1] + 100*(random_space[i])[1];
-		init_cond.at(2,0) = X0[2] + 100*(random_space[i])[2];
-		init_cond.at(3,0) = V0[0] + (random_space[i])[3];
-		init_cond.at(4,0) = V0[1] + (random_space[i])[4];
-		init_cond.at(5,0) = V0[2] + (random_space[i])[5];
-
 		Y.clear();
 		T.clear();
 
-		explicit_rk6(func,tspan,init_cond,h,&Y,&T,MAX_ITER);
+		param.mu = mu + 4e12*(random_space[i])[0];
+
+		explicit_rk6(func,tspan,init_cond,&param,h,&Y,&T,MAX_ITER);
 
 		solution.push_back( Y );
+		param_handler.push_back(param);
 	}
 
-	vector< vector<double> > snapshots;
-	vector< vector<double> > snapshots_nonlinear;
-	int num_samples = 10;
-	vector<int> rand_index;
-	srand(1);
-//	srand((time(NULL)%10)*313123141);
-	for(int i = 0 ; i < num_samples ; i++)
-		rand_index.push_back( rand() % MAX_ITER );
-	
-	vector<double> nonlinear_state;
-	void (Model::*func_nonlinear)(Matrix*,double,Matrix*) = &Model::nonlinear;
-	for(int i = 0 ; i < random_space.size() ; i++)
+	vector< vector<double> > all_data;
+	for(int i = 0 ; i < solution.size() ; i++)
 	{
-		for(int j = 0 ; j < rand_index.size() ; j++)
-		{
-			snapshots.push_back( (solution[i])[rand_index[j]] );
-			compute_nonlinear_term(func_nonlinear,&nonlinear_state,1,(solution[i])[rand_index[j]]);		// If time is required replace 1 with time
-			snapshots_nonlinear.push_back( nonlinear_state );
-		}
+		for(int j = 0 ; j < solution[i].size() ; j++)
+			all_data.push_back( (solution[i])[j] );
 	}
+	Matrix mat;
+	mat.initiate_vector_vector(all_data);
 
-	Matrix M;
-	M.initiate_vector_vector(snapshots);
-	M = M.tr();
-	vector< vector<double> > U,V;
-	vector<double> S;
-	M.svd(&U,&S,&V);
+	Matrix cluster_centers = kmeans(&mat,10,1000);
+	Matrix labels = label_vectors(&mat,&cluster_centers);
 
-	double total_phi = 0;
-	for(int i = 0 ; i < S.size() ; i++)
-		total_phi += S[i];
-	int iterator_phi = -1;
-	double checker = 0;
-
-	while(checker < (1-tol) )
-	{
-		iterator_phi++;
-		checker += S[iterator_phi] / total_phi;
-	}
-
-	convert_to_matrix( &Phi , U , iterator_phi , 'c' );
-	for(int i = 0 ; i < S.size() ; i++)
-		cout << S[i] << " ";
-	cout << endl;
-
-	Matrix N_mat;
-	N_mat.initiate_vector_vector(snapshots_nonlinear);
-	N_mat = N_mat.tr();
-	U.clear();
-	V.clear();
-	S.clear();
-	N_mat.svd(&U,&S,&V);
-
-	double total_psi = 0;
-	for(int i = 0 ; i < S.size() ; i++)
-		total_psi += S[i];
-	int iterator_psi = -1;
-	checker = 0;
-
-	while(checker < (1-tol) )
-	{
-		iterator_psi++;
-		checker += S[iterator_psi] / total_psi;
-	}
-
-	convert_to_matrix( &Psi , U , iterator_psi , 'c' );
-
-	discrete_empirical_interpolation(&P,&Psi);
-
-	cout << iterator_phi << " - " << iterator_psi << endl;
+	char path1[] = "./data/data.txt";
+	char path2[] = "./data/centers.txt";
+	char path3[] = "./data/labels.txt";
+	mat.save(path1);
+	cluster_centers.save(path2);
+	labels.save(path3);
 }
 
-void Model::test_reduced_model()
+void Model::single_sat()
 {
-	void (Model::*func)(Matrix*,double,Matrix*) = &Model::dynamic_reduced;
-	double* tspan = new double[2];
-	tspan[0] = 0.0;
-	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
-	double h = tspan[1]/500;
-	int MAX_ITER = static_cast<int>( tspan[1] / h );
-	vector< vector<double> > Y;
-	vector<double> T;
-
-	int N = 5;
-	double tol = 1e-10;
-
-	A.zeros(6,6);
-	A.at(0,3) = 1;
-	A.at(1,4) = 1;
-	A.at(2,5) = 1;
-
-	this->build_reduced_model(N,tol);
-	A_tilde = Phi.tr() * A * Phi;
-	F_tilde = Phi.tr() * Psi * ( P.tr() * Psi ).inv();
-
-	srand(2);
-	double* random_vec = new double[6];
-	double r;
-	for(int i = 0 ; i < 6 ; i++)
-	{
-		r = (double) rand() / RAND_MAX;
-		random_vec[i] = r - 0.5;
-	}
-
-	vector<double> ic;
-	ic.push_back( X0[0] + 100*random_vec[0]);
-	ic.push_back( X0[1] + 100*random_vec[1]);
-	ic.push_back( X0[2] + 100*random_vec[2]);
-	ic.push_back( V0[0] + random_vec[3]);
-	ic.push_back( V0[1] + random_vec[4]);
-	ic.push_back( V0[2] + random_vec[5]);
-	Matrix init_cond,init_cond_red;
-	init_cond.initiate_vector(ic,6,1);
-	init_cond_red = Phi.tr() * init_cond;
-
-	explicit_rk6(func,tspan,init_cond_red,h,&Y,&T,MAX_ITER);
-
-	Matrix result, result_reduced, temp, vec;
-	result_reduced.initiate_vector_vector(Y);
-	for(int i = 0 ; i < MAX_ITER ; i++)
-	{
-		temp.clear();
-		temp = ( result_reduced.get_row(i) ).tr();
-
-		vec.clear();
-		vec = Phi * temp;
-		result.add_row(vec.tr());
-	}
-
-	char path1[] = "./data/result.txt";
-	result.save(path1);
-
-	void (Model::*func2)(Matrix*,double,Matrix*) = &Model::dynamic_3d;
-	vector< vector<double> > exact;
-	T.clear();
-	explicit_rk6(func2,tspan,init_cond,h,&exact,&T,MAX_ITER);
-
-	char path2[] = "./data/result_exact.txt";
-	write_file(&exact,path2);
-}
-
-void Model::single_sat(double* rand_vec, int len)
-{
-	void (Model::*func)(Matrix*,double,Matrix*) = &Model::dynamic_3d;
+	void (Model::*func)(Matrix*,double,Matrix*,Parameters*) = &Model::dynamic_3d_param;
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
@@ -525,7 +395,10 @@ void Model::single_sat(double* rand_vec, int len)
 	Matrix init_cond;
 	init_cond.initiate_vector(ic,6,1);
 
-	explicit_rk6(func,tspan,init_cond,h,&Y,&T,MAX_ITER);
+	Parameters param;
+	param.mu = mu;
+
+	explicit_rk6(func,tspan,init_cond,&param,h,&Y,&T,MAX_ITER);
 
 	char path[] = "./data/output.txt";
 	write_file(&Y,path);
