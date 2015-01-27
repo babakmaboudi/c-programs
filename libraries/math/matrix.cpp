@@ -99,6 +99,14 @@ void Matrix::get_size(int* m, int* n)
 	(*n) = ncols;
 }
 
+int Matrix::length()
+{
+	if(nrows > ncols)
+		return nrows;
+	else
+		return ncols;
+}
+
 double Matrix::get_element(int m, int n)
 {
 	if( ( m<nrows ) && ( n<ncols ) )
@@ -181,6 +189,17 @@ void Matrix::set_col(int pos, Matrix col)
 double& Matrix::at( int m, int n )
 {
 	return mat[m*ncols + n];
+}
+
+double& Matrix::at(int pos)
+{
+	if( (nrows != 1) && (ncols != 1) )
+	{
+		cout << "Matrix must be a vector!" << endl;
+		return mat[0];
+	}
+	else
+		return mat[pos];
 }
 
 void Matrix::add_row(Matrix M)
@@ -411,6 +430,77 @@ void Matrix::svd(vector< vector<double> >* U_mat, vector<double>* S_vec, vector<
 	delete[] U;
 	delete[] VT;
 }
+
+void Matrix::svd(Matrix* U_mat, Matrix* S_vec, Matrix* V_mat)
+{
+	double* A = new double[nrows*ncols];
+
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+
+	char JOBU = 'S';
+	char JOBVT = 'S';
+	__CLPK_integer M = nrows;
+	__CLPK_integer N = ncols;
+	__CLPK_integer LDA = nrows;
+	int min;
+	if(nrows > ncols)
+		min = ncols;
+	else
+		min = nrows;
+	double* S = new double[min];
+	double* U = new double[nrows * min];
+	__CLPK_integer LDU = nrows;
+
+	double* VT = new double[min * ncols];
+	__CLPK_integer LDVT = min;
+
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dgesvd_(&JOBU,&JOBVT,&M,&N,A,&LDA,S,U,&LDU,VT,&LDVT,&work_size,&LWORK,&INFO);
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+	
+	dgesvd_(&JOBU,&JOBVT,&M,&N,A,&LDA,S,U,&LDU,VT,&LDVT,WORK,&LWORK,&INFO);
+
+	assert(INFO == 0);
+
+	delete[] A;
+	delete[] WORK;
+
+	U_mat->clear();
+	U_mat->zeros(nrows,min);
+	for(int i = 0 ; i < min ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			 U_mat->at(j,i) = U[i*nrows + j];
+	}
+
+	S_vec->clear();
+	S_vec->zeros(min,1);
+	for(int i = 0 ; i < min ; i++)
+		S_vec->at(i) = S[i];
+
+	V_mat->clear();
+	V_mat->zeros(min,ncols);
+	for(int i = 0 ; i < min ; i++)
+	{
+		for(int j = 0 ; j < ncols ; j++)
+			V_mat->at(i,j) = VT[j*min + i];
+	}
+	(*V_mat) = V_mat->tr();
+
+	delete[] S;
+	delete[] U;
+	delete[] VT;
+}
+
 
 Matrix Matrix::inv()
 {

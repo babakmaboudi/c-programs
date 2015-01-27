@@ -27,6 +27,53 @@ void Model::sv2oe( double* pos, double* vel, double* elements )
 	delete[] h;
 }
 
+int Model::find_closest_center(Matrix vec)
+{
+	double dist = 0;
+	double d;
+	Matrix temp;
+	vec = vec.tr();
+	temp = vec - cluster_centers.get_row(0);
+	dist = temp.norm2();
+	int center = 0;
+	for(int i = 1 ; i < cluster_centers.get_num_rows() ; i++)
+	{
+		temp = vec - cluster_centers.get_row(i);
+		d = temp.norm2();
+		if( d < dist )
+		{
+			dist = d;
+			center = i;
+		}
+	}
+	return center;
+}
+
+void Model::compute_significant_subspace(Matrix* res, Matrix* mat,double tol)
+{
+	Matrix U, S, V;
+	mat->svd(&U,&S,&V);
+
+	cout << S << endl;
+
+	double total = 0;
+	for(int i = 0 ; i < S.length() ; i++)
+		total += S.at(i);
+	int iterator = -1;
+	double checker = 0;
+	while( checker < (1-tol) )
+	{
+		iterator++;
+		checker += S.at(iterator) / total;
+	}
+	res->clear();
+	res->zeros( mat->get_num_rows() , iterator );
+	for(int i = 0 ; i < iterator ; i++)
+	{
+		res->set_col( i , U.get_col(i) );
+	}
+}
+
 void Model::discrete_empirical_interpolation(Matrix* P, Matrix* mat)
 {
 	double dummy;
@@ -228,6 +275,69 @@ void Model::nonlinear(Matrix* dy, double t, Matrix* y,Parameters* param)
 	dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
 }
 
+void Model::dynamic_reduced_param(Matrix* dy, double t, Matrix* y,Parameters* param)
+{
+	Matrix u,non_lin;
+	int check;
+	u = local_phi[nearest] * (*y);
+	check = find_closest_center(u);
+	if(check != nearest)
+	{
+		nearest = check;
+		(*y) = local_phi[nearest].tr() * u;
+	}
+
+	cout << nearest << endl << u << endl;
+	getchar();
+
+	non_lin.zeros(6,1);
+	nonlinear(&non_lin,t,&u,param);
+	(*dy) = local_A[nearest]*(*y) + local_phi[nearest].tr()*non_lin;
+/*
+
+	double coef = - param->mu / pow( pow(u.at(0,0),2) + pow(u.at(1,0),2) + pow(u.at(2,0),2) , 1.5 );
+	vector<double> polar = get_polar_coord(&u);
+	double phi = polar[1];
+	double coef2 = -param->mu * pow(ae,2) * J2 / (2*pow(polar[0],5));
+	non_lin.zeros(P_list.size() , 1);
+	for(int i = 0 ; i < P_list.size() ; i++)
+	{
+		switch( P_list[i] )
+		{
+			case 0:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 1:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 2:
+				non_lin.at( i , 0 ) = 0;
+				break;
+			case 3:
+				// Earth gravity
+				non_lin.at( i , 0 ) = coef * u.at(0,0);
+				// Earth Oblateness
+				non_lin.at( i , 0 ) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 )*u.at(0,0);
+				break;
+			case 4:
+				// Earth gravity
+				non_lin.at( i , 0 ) = coef * u.at(1,0);
+				// Earth Oblateness
+				non_lin.at( i , 0 ) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 )*u.at(1,0);
+				break;
+			case 5:
+				// Earth Gravity
+				non_lin.at( i , 0 ) = coef * u.at(2,0);
+				// Earth Oblateness
+				non_lin.at( i , 0 ) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 )*u.at(2,0);
+				break;
+		}
+	}
+	(*dy) = A_tilde*(*y) + F_tilde * non_lin;
+*/
+
+}
+
 void Model::compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),vector<double>* result, double t, vector<double> current, Parameters* param)
 {
 	Matrix state, nonlinear_state;
@@ -305,7 +415,7 @@ void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*)
 	}
 }
 
-void Model::BRM_params()
+void Model::BRM_params(int N, double tol)
 {
 	void (Model::*func)(Matrix*,double,Matrix*,Parameters*) = &Model::dynamic_3d_param;
 	double* tspan = new double[2];
@@ -318,7 +428,7 @@ void Model::BRM_params()
 
 	int d = 1;		//dimension of the random space
 	vector<double> linear_space;
-	linear_space = linspace(-0.5,0.5,5);
+	linear_space = linspace(-0.5,0.5,N);
 
 	Grid grid;
 	for(int i = 0 ; i < d ; i++)
@@ -363,15 +473,86 @@ void Model::BRM_params()
 	Matrix mat;
 	mat.initiate_vector_vector(all_data);
 
-	Matrix cluster_centers = kmeans(&mat,10,1000);
+	cluster_centers = kmeans(&mat,10,1000);
 	Matrix labels = label_vectors(&mat,&cluster_centers);
 
+	vector<int> IDX;
+	Matrix section;
+	Matrix U, S, V;
+	Matrix Phi;
+	for(int i = 0 ; i < 10 ; i++)
+	{
+		IDX.clear();
+		find(&IDX,&labels, i);
+		section.clear();
+		for(int j = 0 ; j < IDX.size() ; j++)
+		{
+			section.add_row( mat.get_row( IDX[j] ) );
+		}
+		section = section.tr();
+		compute_significant_subspace(&Phi,&section,tol);
+		local_phi.push_back(Phi);
+	}	
+
 	char path1[] = "./data/data.txt";
-	char path2[] = "./data/centers.txt";
-	char path3[] = "./data/labels.txt";
+	char path2[] = "./data/labels.txt";
 	mat.save(path1);
-	cluster_centers.save(path2);
-	labels.save(path3);
+	labels.save(path2);
+}
+
+void Model::TRM_params()
+{
+	void (Model::*func)(Matrix*,double,Matrix*,Parameters*) = &Model::dynamic_reduced_param;
+	double* tspan = new double[2];
+	tspan[0] = 0.0;
+	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
+	double h = tspan[1]/500;
+	int MAX_ITER = static_cast<int>( tspan[1] / h );
+	vector< vector<double> > Y;
+	vector<double> T;
+
+	int N = 5;
+	double tol = 1e-10;
+
+	A.zeros(6,6);
+	A.at(0,3) = 1;
+	A.at(1,4) = 1;
+	A.at(2,5) = 1;
+
+	this->BRM_params(N,tol);
+	
+	Matrix Phi;
+	for(int i = 0 ; i < cluster_centers.get_num_rows() ; i++)
+	{
+		Phi = local_phi[i];
+		local_A.push_back( Phi.tr() * A * Phi );
+	}
+	
+	srand(2);
+	double* random_vec = new double[6];
+	double r;
+	for(int i = 0 ; i < 6 ; i++)
+	{
+		r = (double) rand() / RAND_MAX;
+		random_vec[i] = r - 0.5;
+	}
+
+	vector<double> ic;
+	ic.push_back( X0[0] );
+	ic.push_back( X0[1] );
+	ic.push_back( X0[2] );
+	ic.push_back( V0[0] );
+	ic.push_back( V0[1] );
+	ic.push_back( V0[2] );
+	Matrix init_cond,init_cond_red;
+	init_cond.initiate_vector(ic,6,1);
+	nearest = find_closest_center(init_cond);
+	init_cond_red = local_phi[nearest].tr() * init_cond;
+
+	Parameters param;
+	param.mu = mu + 4e12*random_vec[0];
+
+	//explicit_rk6(func,tspan,init_cond_red,&param,h,&Y,&T,MAX_ITER);
 }
 
 void Model::single_sat()

@@ -212,3 +212,14 @@ int* randperm(int n)
 	}
 	return perm;
 }
+
+void find(vector<int>* res, Matrix* IDX, int instance)
+{
+	int len = IDX->length();
+	
+	for(int i = 0 ; i < len ; i++)
+	{
+		if( IDX->at(i) == instance )
+			res->push_back(i);
+	}
+}

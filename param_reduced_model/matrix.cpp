@@ -348,7 +348,7 @@ void Matrix::svd(vector< vector<double> >* U_mat, vector<double>* S_vec, vector<
 	{
 		temp.clear();
 		for(int j = 0 ; j < nrows ; j++)
-			temp.push_back( U[i*min + j] );
+			temp.push_back( U[i*nrows + j] );
 		U_mat->push_back(temp);
 	}
 

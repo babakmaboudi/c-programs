@@ -363,7 +363,7 @@ void Model::BRM_params(int N, double tol)
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
-	double h = tspan[1]/500;
+	double h = tspan[1]/10000;
 	int MAX_ITER = static_cast<int>( tspan[1] / h );
 	vector< vector<double> > Y;
 	vector<double> T;
@@ -450,8 +450,7 @@ void Model::BRM_params(int N, double tol)
 	convert_to_matrix( &Phi , U , iterator_phi , 'c' );
 
 	for(int i = 0 ; i < S.size() ; i++)
-		cout << S[i] << " ";
-	cout << endl;
+		cout << S[i] << endl;
 
 	Matrix N_mat;
 	N_mat.initiate_vector_vector(snapshots_nonlinear);
@@ -485,7 +484,7 @@ void Model::TRM_params()
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
-	double h = tspan[1]/500;
+	double h = tspan[1]/10000;
 	int MAX_ITER = static_cast<int>( tspan[1] / h );
 	vector< vector<double> > Y;
 	vector<double> T;

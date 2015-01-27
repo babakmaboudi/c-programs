@@ -9,7 +9,7 @@
 #include <cmath>
 #include <vector>
 #include "grid.h"
-#include "matrix.h"
+#include "../libraries/math/matrix.h"
 #include "tools.h"
 #include "parameters.h"
 
@@ -44,9 +44,16 @@ class Model
 		Matrix F_tilde;
 		vector<int> P_list;
 
+		vector<Matrix> local_phi;
+		vector<Matrix> local_A;
+		Matrix cluster_centers;
+		int nearest;
+
 		vector<Parameters> param_handler;	// mu 
 	public:
 		void sv2oe(double*,double*,double*);		// State vector to orbital elements 
+		int find_closest_center(Matrix);
+		void compute_significant_subspace(Matrix*,Matrix*,double);
 		void discrete_empirical_interpolation(Matrix*,Matrix*);
 
 		void initiate_from_file(char*);
@@ -61,7 +68,7 @@ class Model
 		void compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),vector<double>*,double,vector<double>,Parameters*);
 		void explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),double*,Matrix,Parameters*,double,vector<vector<double> >*,vector<double>*,int);
 
-		void BRM_params();
+		void BRM_params(int,double);
 		void TRM_params();
 
 		void single_sat();

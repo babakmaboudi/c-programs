@@ -37,6 +37,7 @@ class Matrix
 		int get_num_rows();
 		int get_num_cols();
 		void get_size(int*,int*);
+		int length();
 		double get_element(int,int);
 		vector<double> get_matrix();
 		vector<double>* get_matrix_ptr();
@@ -47,6 +48,7 @@ class Matrix
 		void set_col(int,Matrix);
 
 		double& at(int,int);
+		double& at(int);
 		void add_row(Matrix);
 		void add_col(Matrix);
 
@@ -60,6 +62,7 @@ class Matrix
 		double norm2();
 
 		void svd(vector< vector<double> >*,vector<double>*,vector< vector<double> >*);
+		void svd(Matrix*,Matrix*,Matrix*);
 		Matrix inv();
 
 		friend ostream& operator<<(ostream&,Matrix&);

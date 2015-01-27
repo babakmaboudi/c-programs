@@ -405,8 +405,7 @@ void Model::build_reduced_model(int N, double tol)
 
 	convert_to_matrix( &Phi , U , iterator_phi , 'c' );
 	for(int i = 0 ; i < S.size() ; i++)
-		cout << S[i] << " ";
-	cout << endl;
+		cout << S[i] << endl;
 
 	Matrix N_mat;
 	N_mat.initiate_vector_vector(snapshots_nonlinear);
