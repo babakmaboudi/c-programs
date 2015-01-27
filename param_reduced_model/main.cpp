@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include "matrix.h"
+#include "../libraries/math/matrix.h"
 #include "model.h"
 #include <cmath>
 #include "tools.h"

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <vector>
 #include "grid.h"
-#include "matrix.h"
+#include "../libraries/math/matrix.h"
 #include "tools.h"
 #include "parameters.h"
 

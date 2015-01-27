@@ -2,8 +2,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include "matrix.h"
 #include "model.h"
+#include "../libraries/math/matrix.h"
 #include <cmath>
 
 using namespace std;
