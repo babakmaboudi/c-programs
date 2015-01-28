@@ -13,5 +13,6 @@ int main(int argc, char** argv)
 	Model model;
 	model.initiate_from_file(file_path);
 	model.TRM_params();
+	model.single_sat();
 	return 0;
 }

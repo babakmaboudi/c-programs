@@ -278,23 +278,12 @@ void Model::nonlinear(Matrix* dy, double t, Matrix* y,Parameters* param)
 void Model::dynamic_reduced_param(Matrix* dy, double t, Matrix* y,Parameters* param)
 {
 	Matrix u,non_lin;
-	int check;
 	u = local_phi[nearest] * (*y);
-	check = find_closest_center(u);
-	if(check != nearest)
-	{
-		nearest = check;
-		(*y) = local_phi[nearest].tr() * u;
-	}
-
-	cout << nearest << endl << u << endl;
-	getchar();
 
 	non_lin.zeros(6,1);
 	nonlinear(&non_lin,t,&u,param);
 	(*dy) = local_A[nearest]*(*y) + local_phi[nearest].tr()*non_lin;
 /*
-
 	double coef = - param->mu / pow( pow(u.at(0,0),2) + pow(u.at(1,0),2) + pow(u.at(2,0),2) , 1.5 );
 	vector<double> polar = get_polar_coord(&u);
 	double phi = polar[1];
@@ -375,6 +364,79 @@ void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*)
 
 	for(int j = 1 ; j < MAX_ITER ; j++)
 	{
+		(this->*func)(&k1,t,&current,param);
+		k1 = k1.scalar(h);
+		
+		temp = current + k1;
+		(this->*func)(&k2,t+h,&temp,param);
+		k2 = k2.scalar(h);
+
+		temp = k1.scalar(3) + k2;
+		temp = current + temp.scalar(static_cast<double>(1)/8);
+		(this->*func)(&k3,t+h/2,&temp,param);
+		k3 = k3.scalar(h);
+
+		temp = k1.scalar(8) + k2.scalar(2) + k3.scalar(8);
+		temp = current + temp.scalar(static_cast<double>(1)/27);
+		(this->*func)(&k4,t+2*h/3,&temp,param);
+		k4 = k4.scalar(h);
+
+		temp = k1.scalar( (3*(3*sqrt(21) - 7) )) + k2.scalar( -8*(7-sqrt(21)) ) + k3.scalar( 48*(7 - sqrt(21)) ) + k4.scalar( -3*(21 - sqrt(21)) );
+		temp = current + temp.scalar(static_cast<double>(1)/392);
+		(this->*func)(&k5,t + (7 - sqrt(21))*h/14,&temp,param);
+		k5 = k5.scalar(h);
+
+		temp = k1.scalar( -5*(231 + 51*sqrt(21)) ) + k2.scalar( -40*(7 + sqrt(21)) ) + k3.scalar( -320*sqrt(21) ) + k4.scalar( 3*(21 + 121*sqrt(21)) ) + k5.scalar( 392*(6 + sqrt(21)) );
+		temp = current + temp.scalar(static_cast<double>(1)/1960);
+		(this->*func)(&k6,t + (7 + sqrt(21))*h/14,&temp,param);
+	
+		k6 = k6.scalar(h);
+		temp = k1.scalar( 15*(22+7*sqrt(21)) ) + k2.scalar( 120 ) + k3.scalar( 40*( 7*sqrt(21) - 5 ) ) + k4.scalar( -63*(3*sqrt(21) - 2) ) + k5.scalar( - 14*(49+9*sqrt(21)) ) + k6.scalar( 70*( 7 - sqrt(21)) );
+		temp = current + temp.scalar(static_cast<double>(1)/180);
+		(this->*func)(&k7,t + h,&temp,param);
+		k7 = k7.scalar(h);
+
+		temp = k1.scalar(9) + k3.scalar(64) + k5.scalar(49) + k6.scalar(49) + k7.scalar(9);
+		current = current + temp.scalar(static_cast<double>(1)/180);
+		t = t+h;
+		
+		write_matrix(&current,t,Y,T);
+	}
+}
+
+void Model::explicit_rk6_reduced(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),double* tspan, Matrix init_cond, Parameters* param, double h, vector<vector<double> >* Y, vector<double>* T,int MAX_ITER)
+
+{
+	double t = tspan[0];
+	Matrix k1,k2,k3,k4,k5,k6,k7,current,temp;
+	k1.zeros(6,1);
+	k2.zeros(6,1);
+	k3.zeros(6,1);
+	k4.zeros(6,1);
+	k5.zeros(6,1);
+	k6.zeros(6,1);
+	k7.zeros(6,1);
+	current.zeros(6,1);
+	temp.zeros(6,1);
+
+	current = init_cond;
+
+	write_matrix(&current,t,Y,T);
+
+	int check;
+	Matrix full_dim;
+
+	for(int j = 1 ; j < MAX_ITER ; j++)
+	{
+		full_dim = local_phi[nearest] * current;
+		check = find_closest_center(full_dim);
+		if(check != nearest)
+		{
+			nearest = check;
+			current = local_phi[nearest].tr() * full_dim;
+		}
+		cout << nearest << endl << full_dim << endl;
+
 		(this->*func)(&k1,t,&current,param);
 		k1 = k1.scalar(h);
 		
@@ -552,7 +614,7 @@ void Model::TRM_params()
 	Parameters param;
 	param.mu = mu + 4e12*random_vec[0];
 
-	//explicit_rk6(func,tspan,init_cond_red,&param,h,&Y,&T,MAX_ITER);
+	explicit_rk6_reduced(func,tspan,init_cond_red,&param,h,&Y,&T,MAX_ITER);
 }
 
 void Model::single_sat()

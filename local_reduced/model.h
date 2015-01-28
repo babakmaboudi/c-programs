@@ -67,6 +67,7 @@ class Model
 		void dynamic_reduced_param(Matrix*,double,Matrix*,Parameters*);
 		void compute_nonlinear_term(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),vector<double>*,double,vector<double>,Parameters*);
 		void explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),double*,Matrix,Parameters*,double,vector<vector<double> >*,vector<double>*,int);
+		void explicit_rk6_reduced(void (Model::*func)(Matrix*,double,Matrix*,Parameters*),double*,Matrix,Parameters*,double,vector<vector<double> >*,vector<double>*,int);
 
 		void BRM_params(int,double);
 		void TRM_params();
