@@ -1,0 +1,24 @@
+6.67384e-11 		// Gravitational constant
+5.972e24 		// Mass of the Earth
+6378136.49		// Elipsoidal paramtere of the Earth
+0.00108263		// The second hoarmonic of the Earth
+%%%%%%%%%%
+-7232720.490		// X1 Initial position of the satellite
+-167227.700		// X2 Initial position of the satellite
+14595.566		// X3 Initial position of the satellite
+-5.243469		// V1 Initial velocity of the satellite
+1160.655450		// V2 Initial velocity of the satellite
+7329.834189		// V3 Initial velocity of the satellite
+%%%%%%%%%%
+3.844e8			// X Posiion of the moon with respect to Geocenter
+0			// Y Posiion of the moon with respect to Geocenter
+0			// Z Posiion of the moon with respect to Geocenter
+7.347e22		// Mass of the moon
+%%%%%%%%%%
+0.577350269189626	// X Direction of the radiation of the Sun
+0.577350269189626	// Y Direction of the radiation of the Sun
+0.577350269189626	// Z Direction of the radiation of the Sun
+4.56e-6			// Momentum flux of the sun
+1.0			// Reflectivity coefficient of the satellite
+%%%%%%%%%%
+200.0			// Weight of the satellite

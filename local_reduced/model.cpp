@@ -54,8 +54,6 @@ void Model::compute_significant_subspace(Matrix* res, Matrix* mat,double tol)
 	Matrix U, S, V;
 	mat->svd(&U,&S,&V);
 
-	cout << S << endl;
-
 	double total = 0;
 	for(int i = 0 ; i < S.length() ; i++)
 		total += S.at(i);
@@ -364,6 +362,8 @@ void Model::explicit_rk6(void (Model::*func)(Matrix*,double,Matrix*,Parameters*)
 
 	for(int j = 1 ; j < MAX_ITER ; j++)
 	{
+		prog_bar(j,MAX_ITER);
+
 		(this->*func)(&k1,t,&current,param);
 		k1 = k1.scalar(h);
 		
@@ -425,9 +425,12 @@ void Model::explicit_rk6_reduced(void (Model::*func)(Matrix*,double,Matrix*,Para
 
 	int check;
 	Matrix full_dim;
+	Matrix sol;
 
 	for(int j = 1 ; j < MAX_ITER ; j++)
 	{
+		prog_bar(j,MAX_ITER);
+
 		full_dim = local_phi[nearest] * current;
 		check = find_closest_center(full_dim);
 		if(check != nearest)
@@ -435,7 +438,8 @@ void Model::explicit_rk6_reduced(void (Model::*func)(Matrix*,double,Matrix*,Para
 			nearest = check;
 			current = local_phi[nearest].tr() * full_dim;
 		}
-		cout << nearest << endl << full_dim << endl;
+//		cout << full_dim << endl;
+		sol.add_row( full_dim.tr() );
 
 		(this->*func)(&k1,t,&current,param);
 		k1 = k1.scalar(h);
@@ -475,6 +479,9 @@ void Model::explicit_rk6_reduced(void (Model::*func)(Matrix*,double,Matrix*,Para
 		
 		write_matrix(&current,t,Y,T);
 	}
+	
+	char path[] = "./data/result_reduced.txt";
+	sol.save(path);
 }
 
 void Model::BRM_params(int N, double tol)
@@ -483,7 +490,7 @@ void Model::BRM_params(int N, double tol)
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
-	double h = tspan[1]/500;
+	double h = tspan[1]/15000;
 	int MAX_ITER = static_cast<int>( tspan[1] / h );
 	vector< vector<double> > Y;
 	vector<double> T;
@@ -535,14 +542,14 @@ void Model::BRM_params(int N, double tol)
 	Matrix mat;
 	mat.initiate_vector_vector(all_data);
 
-	cluster_centers = kmeans(&mat,10,1000);
+	cluster_centers = kmeans(&mat,150,1000);
 	Matrix labels = label_vectors(&mat,&cluster_centers);
 
 	vector<int> IDX;
 	Matrix section;
 	Matrix U, S, V;
 	Matrix Phi;
-	for(int i = 0 ; i < 10 ; i++)
+	for(int i = 0 ; i < 150 ; i++)
 	{
 		IDX.clear();
 		find(&IDX,&labels, i);
@@ -555,11 +562,6 @@ void Model::BRM_params(int N, double tol)
 		compute_significant_subspace(&Phi,&section,tol);
 		local_phi.push_back(Phi);
 	}	
-
-	char path1[] = "./data/data.txt";
-	char path2[] = "./data/labels.txt";
-	mat.save(path1);
-	labels.save(path2);
 }
 
 void Model::TRM_params()
@@ -568,7 +570,7 @@ void Model::TRM_params()
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(orb_vec[0],3)/mu);
-	double h = tspan[1]/500;
+	double h = tspan[1]/15000;
 	int MAX_ITER = static_cast<int>( tspan[1] / h );
 	vector< vector<double> > Y;
 	vector<double> T;
@@ -615,6 +617,14 @@ void Model::TRM_params()
 	param.mu = mu + 4e12*random_vec[0];
 
 	explicit_rk6_reduced(func,tspan,init_cond_red,&param,h,&Y,&T,MAX_ITER);
+
+
+	void (Model::*func2)(Matrix*,double,Matrix*,Parameters*) = &Model::dynamic_3d_param;
+	vector< vector<double> > exact;
+	T.clear();
+	explicit_rk6(func2,tspan,init_cond,&param,h,&exact,&T,MAX_ITER);
+	char path2[] = "./data/result_exact.txt";
+	write_file(&exact,path2);
 }
 
 void Model::single_sat()
