@@ -21,6 +21,8 @@ class Model
 		
 		void deriv_symp(Matrix*,double,Matrix*,Parameters*,int);
 		void euler_symp(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int),double*,Matrix,Parameters*,double,Matrix*,Matrix*,int);
+		void integ2_symp(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int),double*,Matrix,Parameters*,double,Matrix*,Matrix*,int);
+		void integ4_symp(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int),double*,Matrix,Parameters*,double,Matrix*,Matrix*,int);
 
 		void single_sat();
 };
