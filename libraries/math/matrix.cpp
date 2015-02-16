@@ -6,6 +6,24 @@ Matrix::Matrix()
 	ncols = 0;
 }
 
+Matrix::Matrix(int length)
+{
+	zeros(length,1);
+}
+
+Matrix::Matrix(int length, char ind)
+{
+	if(ind == 'c')
+		zeros(length,1);
+	else
+		zeros(1,length);
+}
+
+Matrix::Matrix(int m, int n)
+{
+	zeros(m,n);
+}
+
 Matrix::~Matrix()
 {
 	mat.clear();
@@ -13,14 +31,12 @@ Matrix::~Matrix()
 
 void Matrix::initiate_array(double* M, int m, int n)
 {
-	mat.clear();
+	mat = vector<double>(m*n); 
 	nrows = m;
 	ncols = n;
-	for(int i = 0 ; i < nrows ; i++)
-	{
-		for(int j = 0 ; j < ncols ; j++)
-			mat.push_back( M[i*ncols + j] );
-	}
+
+	for( int i=0 ; i<nrows*ncols ; i++ )
+		mat[i] = M[i];
 }
 
 
@@ -35,47 +51,56 @@ void Matrix::initiate_vector_vector(vector< vector<double> > M)
 {
 	nrows = M.size();
 	ncols = M[0].size();
+
+	mat = vector<double>(nrows*ncols);
 	for(int i = 0 ; i < nrows ; i++)
 	{
+		assert( M[i].size() == ncols );
 		for(int j = 0 ; j < ncols ; j++)
-			mat.push_back( (M[i])[j] );
+			at(i,j) = M[i][j];
 	}
 }
 
 void Matrix::zeros(int m, int n)
 {
-	mat.clear();
 	nrows = m;
 	ncols = n;
-	for(int i = 0 ; i < m*n ; i++)
-		mat.push_back(0);
+	mat = vector<double>( m*n, 0.0 );
 }
 
 void Matrix::ones(int m, int n)
 {
-	mat.clear();
 	nrows = m;
 	ncols = n;
-	for(int i = 0 ; i < m*n ; i++)
-		mat.push_back(1);
+	mat = vector<double>( m*n, 1.0 );
 }
 
 void Matrix::eye(int m)
 {
-	mat.clear();
 	nrows = m;
 	ncols = m;
-	for(int i = 0 ; i < m ; i++)
-	{
-		for(int j = 0 ; j < m ; j++)
-		{
-			if(i == j)
-				mat.push_back(1);
-			else
-				mat.push_back(0);
-		}
-	}
+	mat = vector<double>( m*m, 0.0 );
+
+	for( int i=0 ; i<m ; i++ )
+		at(i,i) = 1.0;	
 }
+
+void Matrix::rand(int m, int n)
+{
+	nrows = m;
+	ncols = n;
+	mat = vector<double>( m*n, 0.0 );
+
+	for( int i=0 ; i<nrows ; i++ )
+		for(int j=0 ; j<ncols ; j++)
+			at(i,j) = (double) std::rand() / RAND_MAX;
+}
+
+void Matrix::rand(int m)
+{
+	rand(m,1);
+}
+
 void Matrix::clear()
 {
 	nrows = 0;
@@ -109,13 +134,8 @@ int Matrix::length()
 
 double Matrix::get_element(int m, int n)
 {
-	if( ( m<nrows ) && ( n<ncols ) )
-		return mat[m*ncols + n];
-	else
-	{
-		cout << "Index out of bound!" << endl;
-		return 0;
-	}
+	assert( ( m<nrows ) && ( n<ncols ) );
+	return mat[m*ncols + n];
 }
 
 vector<double> Matrix::get_matrix()
@@ -130,60 +150,61 @@ vector<double>* Matrix::get_matrix_ptr()
 
 Matrix Matrix::get_row(int m)
 {
+	assert( m<nrows );
 	Matrix result;
-	if( m<nrows )
-	{
-		result.nrows = 1;
-		result.ncols = ncols;
-		for(int i = 0 ; i < ncols ; i++)
-			(result.mat).push_back( mat[ m*ncols + i ] );
-		return result;
-	}
-	else
-	{
-		cout << "Index out of bound!" << endl;
-		return result;
-	}
+	result.nrows = 1;
+	result.ncols = ncols;
+	for(int i = 0 ; i < ncols ; i++)
+		(result.mat).push_back( mat[ m*ncols + i ] );
+	return result;
 }
 
 Matrix Matrix::get_col(int n)
 {
+	assert( n<ncols );
 	Matrix result;
-	if( n<ncols )
+	result.nrows = nrows;
+	result.ncols = 1;
+	for(int i = 0 ; i < nrows ; i++)
+		(result.mat).push_back( mat[ i*ncols + n ] );
+	return result;
+}
+
+Matrix Matrix::get_submat(int r1, int r2, int c1, int c2)
+{
+	assert( (r1 < r2) && (c1 < c2) && (r2 <= nrows) && (c2 <= ncols) );
+	Matrix result;
+	result.zeros(r2-r1,c2-c1);
+	for(int i = 0 ; i < (r2-r1) ; i++ )
 	{
-		result.nrows = nrows;
-		result.ncols = 1;
-		for(int i = 0 ; i < nrows ; i++)
-			(result.mat).push_back( mat[ i*ncols + n ] );
-		return result;
+		for(int j = 0 ; j < (c2-c1) ; j++ )
+			result.at( i , j ) = this->at( r1 + i , c1 + j );
 	}
-	else
-	{
-		cout << "Index out of bound!" << endl;
-		return result;
-	}	
+	return result;
 }
 
 void Matrix::set_row(int pos, Matrix row)
 {
-	if( (pos < nrows) && (row.ncols == ncols) )
-	{
-		for(int i = 0 ; i < ncols ; i++)
-			this->at(pos,i) = row.at(0,i);
-	}
-	else
-		cout << "Index out of bound!" << endl;
+	assert( (pos < nrows) && (row.ncols == ncols) );
+	for(int i = 0 ; i < ncols ; i++)
+		this->at(pos,i) = row.at(0,i);
 }
 
 void Matrix::set_col(int pos, Matrix col)
 {
-	if( (pos < ncols) && (col.nrows == nrows) )
+	assert( (pos < ncols) && (col.nrows == nrows) );
+	for(int i = 0 ; i < nrows ; i++)
+		this->at(i,pos) = col.at(i,0);
+}
+
+void Matrix::set_submat(int r, int c, Matrix M)
+{
+	assert( (r+M.nrows <= nrows) && (c+M.ncols <= ncols)  );
+	for(int i = 0 ; i < M.nrows ; i++)
 	{
-		for(int i = 0 ; i < nrows ; i++)
-			this->at(i,pos) = col.at(i,0);
+		for(int j = 0 ; j < M.ncols ; j++)
+			this->at(r+i,c+j) = M.at(i,j);
 	}
-	else
-		cout << "Index out of bound!" << endl;
 }
 
 double& Matrix::at( int m, int n )
@@ -193,57 +214,60 @@ double& Matrix::at( int m, int n )
 
 double& Matrix::at(int pos)
 {
-	if( (nrows != 1) && (ncols != 1) )
-	{
-		cout << "Matrix must be a vector!" << endl;
-		return mat[0];
-	}
-	else
-		return mat[pos];
+	assert( (nrows == 1) || (ncols == 1) );
+	return mat[pos];
 }
 
 void Matrix::add_row(Matrix M)
 {
+	assert( ( (M.nrows == 1) && (M.ncols == ncols) ) || ((nrows == 0) && (ncols == 0)) );
 	if( (M.nrows == 1) && (M.ncols == ncols) )
 	{
 		nrows++;
 		for(int i = 0 ; i < ncols ; i++)
 			mat.push_back( M.at(0,i) );
 	}
-	else if((nrows == 0) && (ncols == 0))
-	{
-		if( M.nrows == 1 )
-		{
-			nrows = 1;
-			ncols = M.ncols;
-			for(int i = 0 ; i < M.ncols ; i++)
-				mat.push_back( M.at(0,i) );
-		}
-		else
-			cout << "Dimension inconsistant!" << endl;
-	}
 	else
-		cout << "Dimension inconsistant!" << endl;
+	{
+		assert( M.nrows == 1 );
+		nrows = 1;
+		ncols = M.ncols;
+		for(int i = 0 ; i < M.ncols ; i++)
+			mat.push_back( M.at(0,i) );
+	}
 }
 
 void Matrix::add_col(Matrix M)
 {
 	if((nrows == 0) && (ncols == 0))
 	{
-		if( M.ncols == 1 )
-		{
-			ncols = 1;
-			nrows = M.nrows;
-			for(int i = 0 ; i < nrows ; i++)
-				mat.push_back(M.at(i,0));
-		}
-		else
-			cout << "Dimension inconsistant!" << endl;
+		assert( M.ncols == 1 );
+		ncols = 1;
+		nrows = M.nrows;
+		for(int i = 0 ; i < nrows ; i++)
+			mat.push_back(M.at(i,0));
 	}
 	else
 	{
 		(*this) = this->tr();
 		this->add_row( M.tr() );
+		(*this) = this->tr();
+	}
+}
+
+void Matrix::append(Matrix M, char ind)
+{
+	if(ind == 'r')
+	{
+		assert( ncols == M.ncols );
+		mat.insert( mat.end() , (M.mat).begin() , (M.mat).end() );
+		nrows += M.nrows;
+	}
+	else
+	{
+		assert( nrows == M.nrows );
+		(*this) = this->tr();
+		this->append( M.tr() , 'r' );
 		(*this) = this->tr();
 	}
 }
@@ -256,93 +280,159 @@ void Matrix::operator=(Matrix M)
 
 Matrix Matrix::operator+(Matrix M)
 {
-	Matrix result;
-	if( (nrows == M.nrows) && (ncols == M.ncols) )
-	{
-		result.nrows = nrows;
-		result.ncols = ncols;
-		for(int i = 0 ; i < mat.size() ; i++)
-			(result.mat).push_back( mat[i] + M.mat[i]);
-	}
-	else
-	{
-		cout << "Inconsistant matrix size!" << endl;
-	}
+	assert( (nrows == M.nrows) && (ncols == M.ncols) );
+	Matrix result(nrows,ncols);
+	for(int i=0 ; i<nrows ; i++)
+		for(int j=0 ; j<ncols ; j++)
+			result.at(i,j) = at(i,j) + M.at(i,j);
 	return result;
+}
+
+void Matrix::operator+=(Matrix M)
+{
+	assert( (nrows == M.nrows) && (ncols == M.ncols) );
+	for(int i=0 ; i<nrows ; i++)
+		for(int j=0 ; j<ncols ; j++)
+			at(i,j) += M.at(i,j);
 }
 
 Matrix Matrix::operator-(Matrix M)
 {
-	Matrix result;
-	if( (nrows == M.nrows) && (ncols == M.ncols) )
-	{
-		result.nrows = nrows;
-		result.ncols = ncols;
-		for(int i = 0 ; i < mat.size() ; i++)
-			(result.mat).push_back( mat[i] - M.mat[i]);
-	}
-	else
-	{
-		cout << "Inconsistant matrix size!" << endl;
-	}
+	assert( (nrows == M.nrows) && (ncols == M.ncols) );
+	Matrix result(nrows,ncols);
+	for(int i=0 ; i<nrows ; i++)
+		for(int j=0 ; j<ncols ; j++)
+			result.at(i,j) = at(i,j) - M.at(i,j);
 	return result;
+}
+
+void Matrix::operator-=(Matrix M)
+{
+	assert( (nrows == M.nrows) && (ncols == M.ncols) );
+	for(int i=0 ; i<nrows ; i++)
+		for(int j=0 ; j<ncols ; j++)
+			at(i,j) -= M.at(i,j);
 }
 
 Matrix Matrix::operator*(Matrix M)
 {
-	Matrix result;
-	if(ncols == M.nrows)
-	{
-		result.nrows = nrows;
-		result.ncols = M.ncols;
-		double temp;
-		for(int i = 0 ; i < nrows ; i++)
-		{
-			for(int j = 0 ; j < M.ncols ; j++)
-			{
-				temp = 0;
-				for(int k = 0 ; k < ncols ; k++)
-				{
-					temp += mat[ i*ncols+k ]*M.mat[k*M.ncols + j];
-				}
-				(result.mat).push_back(temp);
-			}
-		}
-	}
-	else
-	{
-		cout << "Inconsistant matrix size!" << endl;
-	}
+	assert( ncols == M.nrows );
+	double* mat1 = new double[nrows*ncols];
+	double* mat2 = new double[M.nrows*M.ncols];
+	int m = nrows;
+	int n = M.ncols;
+	int k = ncols;
+
+	for(int i=0 ; i<ncols ; i++)
+		for(int j=0 ; j<nrows ; j++)
+			mat1[ i*nrows + j ] = at(j,i);
+
+	for(int i=0 ; i<M.ncols ; i++)
+		for(int j=0 ; j<M.nrows ; j++)
+			mat2[ i*M.nrows + j ] = M.at(j,i);
+	
+	double* prod = new double[m*n];
+
+	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0, mat1, k, mat2 , n, 0.0, prod, n);
+
+	Matrix result(m,n);
+	
+	for(int i=0 ; i<m ; i++)
+		for(int j=0 ; j<n ; j++)
+			result.at(i,j) = prod[ i*n+j ];
+
+	delete[] mat1;
+	delete[] mat2;
+	delete[] prod;
+
 	return result;
+}
+
+Matrix Matrix::operator+( double c )
+{
+	Matrix result;
+	result.initiate_vector( mat, nrows, ncols );
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			result.at(i,j) += c;
+	return result;	
+}
+
+void Matrix::operator+=( double c )
+{
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			at(i,j) += c;
+}
+
+Matrix Matrix::operator-( double c )
+{
+	Matrix result;
+	result.initiate_vector( mat, nrows, ncols );
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			result.at(i,j) -= c;
+	return result;	
+}
+
+void Matrix::operator-=( double c )
+{
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			at(i,j) -= c;
+}
+
+Matrix Matrix::operator*( double c )
+{
+	Matrix result;
+	result.initiate_vector( mat, nrows, ncols );
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			result.at(i,j) *= c;
+	return result;	
+}
+
+void Matrix::operator*=( double c )
+{
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			at(i,j) *= c;
+}
+
+Matrix Matrix::operator/( double c )
+{
+	Matrix result;
+	result.initiate_vector( mat, nrows, ncols );
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			result.at(i,j) /= c;
+	return result;	
+}
+
+void Matrix::operator/=( double c )
+{
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			at(i,j) /= c;
 }
 
 Matrix Matrix::scalar(double c)
 {
 	Matrix result;
-	if( (nrows) && (ncols) )
-	{
-		result.nrows = nrows;
-		result.ncols = ncols;
-		for(int i = 0 ; i < mat.size() ; i++)
-			(result.mat).push_back(c * mat[i]);
-	}
-	else
-	{
-		cout << "No matrix found!" << endl;
-	}
-	return result;
+	result.initiate_vector( mat, nrows, ncols );
+	for( int i=0 ; i<nrows ; i++ )
+		for( int j=0 ; j<ncols ; j++ )
+			result.at(i,j) *= c;
+	return result;	
 }
 
 Matrix Matrix::tr()
 {
 	Matrix result;
-	result.nrows = ncols;
-	result.ncols = nrows;
+	result.zeros( ncols, nrows );
 	for(int i = 0 ; i < ncols ; i++)
-	{
 		for(int j = 0 ; j < nrows ; j++)
-			(result.mat).push_back( mat[ j*ncols + i ] );
-	}
+			result.at(i,j) = at(j,i);
 	return result;
 }
 
@@ -504,52 +594,304 @@ void Matrix::svd(Matrix* U_mat, Matrix* S_vec, Matrix* V_mat)
 
 Matrix Matrix::inv()
 {
+	assert( nrows == ncols );
 	Matrix result;
-	if( nrows == ncols )
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
 	{
-		double* A = new double[ nrows*nrows ];
-		// matrix must be stored column wise
-		for(int i = 0 ; i < ncols ; i++)
-		{
-			for(int j = 0 ; j < nrows ; j++)
-				A[ i*nrows + j ] = mat[j*ncols + i];
-		}
-
-		__CLPK_integer N = nrows;
-		__CLPK_integer LDA = nrows;
-		__CLPK_integer* IPIV = new __CLPK_integer[ nrows+1 ];
-		double work_size;
-		__CLPK_integer LWORK = -1;
-		__CLPK_integer INFO;
-
-		dgetrf_(&N,&N,A,&LDA,IPIV,&INFO);
-		assert(INFO == 0);
-
-		dgetri_(&N,A,&LDA,IPIV,&work_size,&LWORK,&INFO);
-
-		LWORK = static_cast<int>(work_size);
-		double* WORK = new double[LWORK];
-
-		dgetri_(&N,A,&LDA,IPIV,WORK,&LWORK,&INFO);
-
-		assert(INFO == 0);
-
-		delete[] WORK;
-
-		result.zeros(nrows,nrows);
-		for(int i = 0 ; i < nrows ; i++)
-		{
-			for(int j = 0 ; j < ncols ; j++)
-				result.at(i,j) = A[ j*nrows + i ];
-		}
-
-		delete[] A;
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
 	}
-	else
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer LDA = nrows;
+	__CLPK_integer* IPIV = new __CLPK_integer[ nrows+1 ];
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dgetrf_(&N,&N,A,&LDA,IPIV,&INFO);
+	assert(INFO == 0);
+
+	dgetri_(&N,A,&LDA,IPIV,&work_size,&LWORK,&INFO);
+
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+
+	dgetri_(&N,A,&LDA,IPIV,WORK,&LWORK,&INFO);
+
+	assert(INFO == 0);
+
+	delete[] WORK;
+
+	result.zeros(nrows,nrows);
+	for(int i = 0 ; i < nrows ; i++)
 	{
-		cout << "Matrix must be a square!" << endl;
+		for(int j = 0 ; j < ncols ; j++)
+			result.at(i,j) = A[ j*nrows + i ];
 	}
+
+	delete[] A;
+	delete[] IPIV;
 	return result;
+}
+
+/*
+          On exit, LU will have the factors L and U from the factorization
+          A = P*L*U; the unit diagonal elements of L are not stored.
+*/
+
+void Matrix::lu(Matrix* LU, int* pivot)
+{
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer M = ncols;
+	__CLPK_integer LDA = nrows;
+	__CLPK_integer* IPIV = new __CLPK_integer[ nrows+1 ];
+	__CLPK_integer INFO;
+
+	dgetrf_(&N,&N,A,&LDA,IPIV,&INFO);
+	assert(INFO == 0);
+
+	LU->zeros(nrows,ncols);
+	for(int i=0 ; i<nrows ; i++ )
+		for(int j=0 ; j<ncols ; j++)
+			LU->at(i,j) = A[j*nrows + i];
+
+	pivot = new int[nrows+1];
+	for(int i=0 ; i<nrows+1 ; i++)
+		pivot[i] = IPIV[i];
+
+	delete[] A;
+	delete[] IPIV;
+}
+
+double Matrix::det()
+{
+	assert(nrows == ncols);
+
+	int* pivot;
+	Matrix LU;
+
+	lu(&LU,pivot);
+
+	double det = 1.0;
+
+	for(int i=0 ; i<nrows ; i++)
+		det *= LU.at(i,i);
+
+	delete[] pivot;
+	return det;
+}
+
+void Matrix::eig(Matrix* eigval)
+{
+	assert(nrows == ncols);
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+	
+	char JOBVL = 'N';
+	char JOBVR = 'N';
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer LDA = nrows;
+	double* WR = new double[nrows];
+	double* WI = new double[nrows];
+	double* VL;
+	__CLPK_integer LDVL = 1;
+	double* VR;
+	__CLPK_integer LDVR = 1;
+
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dgeev_(&JOBVL,&JOBVR,&N,A,&LDA,WR,WI,VL,&LDVL,VR,&LDVR,&work_size,&LWORK,&INFO);
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+	
+	dgeev_(&JOBVL,&JOBVR,&N,A,&LDA,WR,WI,VL,&LDVL,VR,&LDVR,WORK,&LWORK,&INFO);
+	assert(INFO == 0);
+
+	delete[] WORK;
+
+	eigval->zeros(nrows,2);
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i,0) = WR[i];
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i,1) = WI[i];
+
+	delete[] A;
+	delete[] WR;
+	delete[] WI;
+}
+
+void Matrix::eig(Matrix* eigval, Matrix* eigvecR, Matrix* eigvecI)
+{
+	assert(nrows == ncols);
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+	
+	char JOBVL = 'N';
+	char JOBVR = 'V';
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer LDA = nrows;
+	double* WR = new double[nrows];
+	double* WI = new double[nrows];
+	double* VL;
+	__CLPK_integer LDVL = 1;
+	double* VR = new double[nrows*ncols];
+	__CLPK_integer LDVR = nrows;
+
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dgeev_(&JOBVL,&JOBVR,&N,A,&LDA,WR,WI,VL,&LDVL,VR,&LDVR,&work_size,&LWORK,&INFO);
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+	
+	dgeev_(&JOBVL,&JOBVR,&N,A,&LDA,WR,WI,VL,&LDVL,VR,&LDVR,WORK,&LWORK,&INFO);
+	assert(INFO == 0);
+
+	delete[] WORK;
+
+	eigval->zeros(nrows,2);
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i,0) = WR[i];
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i,1) = WI[i];
+	
+	eigvecR->zeros(nrows,ncols);
+	eigvecI->zeros(nrows,ncols);
+	for(int i=0 ; i<nrows ; i++)
+	{
+		if(eigval->at(i,1) == 0)
+		{
+			for(int j=0 ; j<nrows ; j++)
+			{
+				eigvecR->at(j,i) = VR[ i*nrows + j ];
+				eigvecI->at(j,i) = 0;
+			}
+		}
+		else
+		{
+			for(int j=0 ; j<nrows ; j++)
+			{
+				eigvecR->at(j,i) = VR[ i*nrows + j ];
+				eigvecI->at(j,i) = VR[ (i+1)*nrows + j ];
+				eigvecR->at(j,i+1) = VR[ i*nrows + j ];
+				eigvecI->at(j,i+1) = -VR[ (i+1)*nrows + j ];
+			}
+			i++;
+		}
+	}
+
+	delete[] VR;
+	delete[] A;
+	delete[] WR;
+	delete[] WI;
+}
+
+void Matrix::eig_sym(Matrix* eigval)
+{
+	assert(nrows == ncols);
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+
+	char JOBZ = 'N';
+	char UPLO = 'U';
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer LDA = nrows;
+	double* W = new double[nrows];
+
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dsyev_(&JOBZ,&UPLO,&N,A,&LDA,W,&work_size,&LWORK,&INFO);
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+
+	dsyev_(&JOBZ,&UPLO,&N,A,&LDA,W,WORK,&LWORK,&INFO);
+	assert(INFO == 0);
+
+	delete[] WORK;
+
+	eigval->zeros(nrows,1);
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i) = W[i];
+
+	delete[] A;
+	delete[] W;
+}
+
+void Matrix::eig_sym(Matrix* eigval, Matrix* eigvec)
+{
+	assert(nrows == ncols);
+	double* A = new double[ nrows*nrows ];
+	// matrix must be stored column wise
+	for(int i = 0 ; i < ncols ; i++)
+	{
+		for(int j = 0 ; j < nrows ; j++)
+			A[ i*nrows + j ] = mat[j*ncols + i];
+	}
+
+	char JOBZ = 'V';
+	char UPLO = 'U';
+
+	__CLPK_integer N = nrows;
+	__CLPK_integer LDA = nrows;
+	double* W = new double[nrows];
+
+	double work_size;
+	__CLPK_integer LWORK = -1;
+	__CLPK_integer INFO;
+
+	dsyev_(&JOBZ,&UPLO,&N,A,&LDA,W,&work_size,&LWORK,&INFO);
+	LWORK = static_cast<int>(work_size);
+	double* WORK = new double[LWORK];
+
+	dsyev_(&JOBZ,&UPLO,&N,A,&LDA,W,WORK,&LWORK,&INFO);
+	assert(INFO == 0);
+
+	delete[] WORK;
+
+	eigval->zeros(nrows,1);
+	for(int i=0 ; i<nrows ; i++)
+		eigval->at(i) = W[i];
+
+	eigvec->zeros(nrows,ncols);
+	for(int i=0 ; i<nrows ; i++)
+		for(int j=0 ; j<nrows ; j++)
+			eigvec->at(j,i) = A[ i*nrows + j ];
+	delete[] A;
+	delete[] W;
 }
 
 ostream& operator<<(ostream& os,Matrix& M)

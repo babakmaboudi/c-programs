@@ -98,7 +98,7 @@ void Model::initiate_from_file(char* file_path)
 
 	file.close();
 }
-
+/*
 void Model::deriv(Matrix* dy, double t, Matrix* y, Parameters* param)
 {
 	vector<double> temp;
@@ -112,16 +112,17 @@ void Model::deriv(Matrix* dy, double t, Matrix* y, Parameters* param)
 	// Earth Gravity 
 	dy->at(3,0) = coef * y->at(0,0);
 	// Earth Oblateness
-	dy->at(3,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(0,0);
+//	dy->at(3,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(0,0);
 	// Earth Gravity
 	dy->at(4,0) = coef * y->at(1,0);
 	// Earth Oblateness
-	dy->at(4,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
+//	dy->at(4,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
 	// Earth Gravity
 	dy->at(5,0) = coef * y->at(2,0);	
 	// Earth Oblateness
-	dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
+//	dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
 }
+*/
 
 void Model::deriv_symp(Matrix* dy, double t, Matrix* y, Parameters* param,int indicator)
 {
@@ -150,6 +151,55 @@ void Model::deriv_symp(Matrix* dy, double t, Matrix* y, Parameters* param,int in
 		dy->at(4,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
 		dy->at(5,0) = coef * y->at(2,0);
 		dy->at(5,0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
+	}
+}
+
+void Model::deriv_symp_test(Matrix* dy, double t, Matrix* y, Parameters* param,int indicator)
+{
+	if(indicator == 0)
+	{
+		dy->at(0) = y->at(0);
+		dy->at(1) = y->at(1);
+		dy->at(2) = y->at(2);
+	}
+	else
+	{
+		double coef = - param->mu / pow( pow(y->at(0,0),2) + pow(y->at(1,0),2) + pow(y->at(2,0),2) , 1.5 );
+		vector<double> polar = get_polar_coord(y);
+		double phi = polar[1];
+		double coef2 = -param->mu * pow(param->ae,2) * param->J2 / (2 * pow(polar[0],5));
+		dy->at(0) = coef * y->at(0);
+		dy->at(0) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(0,0);
+		dy->at(1) = coef * y->at(1);
+		dy->at(1) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * y->at(1,0);
+		dy->at(2) = coef * y->at(2);
+		dy->at(2) += coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * y->at(2,0);
+	}
+}
+
+void Model::deriv_symp_reduced(Matrix* dy, double t, Matrix* y, Parameters* param,int indicator)
+{
+	if(indicator == 0)
+	{
+		(*dy) = L * (*y);
+	}
+	else
+	{
+		Matrix x = phi1 * (*y);
+		double coef = - param->mu / pow( pow(x.at(0),2) + pow(x.at(1),2) + pow(x.at(2),2) , 1.5 );
+		vector<double> polar = get_polar_coord(y);
+		double phi = polar[1];
+		double coef2 = -param->mu * pow(param->ae,2) * param->J2 / (2 * pow(polar[0],5));
+
+		Matrix f;
+		f.zeros(3,1);
+		f.at(0) = coef * x.at(0);
+		f.at(0) = f.at(0) + coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * x.at(0);
+		f.at(1) = coef * x.at(1);
+		f.at(1) = f.at(1) + coef2 * ( -15 * pow( sin(phi) , 2 ) + 3 ) * x.at(1);
+		f.at(2) = coef * x.at(2);
+		f.at(2) = f.at(2) + coef2 * ( -15 * pow( sin(phi) , 2 ) + 9 ) * x.at(2);
+		(*dy) = phi2.tr() * f;
 	}
 }
 
@@ -331,10 +381,76 @@ void Model::integ4_symp(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,i
 	}
 }
 
-void Model::single_sat()
+void Model::integ4_symp_reduced(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int),double* tspan, Matrix init_pos, Matrix init_mom, Parameters* param, double h, Matrix* q, Matrix* p ,Matrix* T, int MAX_ITER)
+{
+	double t = tspan[0];
+	Matrix da,db,a,b;
+
+	a = init_pos;
+	b = init_mom;
+
+	da.zeros( a.get_num_rows() , a.get_num_cols() );
+	db.zeros( b.get_num_rows() , b.get_num_cols() );
+
+	T->zeros(MAX_ITER,1);
+	T->at(0) = 0;
+
+	double c1,c2,c3,c4,d1,d2,d3,d4;
+	c1 = 1/( 2 * (2-pow(2,1/3)) );
+	c4 = c1;
+	c2 = ( 1 - pow(2,1/3) )/( 2 * (2-pow(2,1/3)) ) ;
+	c3 = c2;
+	d1 = 1 / ( 2 - pow(2,1/3) );
+	d3 = d1;
+	d2 = - pow(2,1/3) / (2 - pow(2,1/3));
+	d4 = 0;
+	
+	for(int j = 0 ; j < MAX_ITER ; j++)
+	{
+		(this->*func)(&da,t,&b,param,0);
+		da = da.scalar( c1*h );
+		a = a + da;
+
+		(this->*func)(&db,t,&a,param,1);
+		db = db.scalar( d1*h );
+		b = b + db;
+
+		(this->*func)(&da,t,&b,param,0);
+		da = da.scalar( c2*h );
+		a = a + da;
+
+		(this->*func)(&db,t,&a,param,1);
+		db = db.scalar( d2*h );
+		b = b + db;
+
+		(this->*func)(&da,t,&b,param,0);
+		da = da.scalar( c3*h );
+		a = a + da;
+
+		(this->*func)(&db,t,&a,param,1);
+		db = db.scalar( d3*h );
+		b = b + db;
+
+		(this->*func)(&da,t,&b,param,0);
+		da = da.scalar( c4*h );
+		a = a + da;
+
+		(this->*func)(&db,t,&a,param,1);
+		db = db.scalar( d4*h );
+		b = b + db;
+			
+		Matrix temp = a.tr();
+		q->add_row(temp);
+
+		q->add_row(a.tr());
+		p->add_row(b.tr());
+		T->at(j) = t;
+	}
+}
+
+void Model::build_reduced_model(int N, double tol)
 {
 	void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int) = &Model::deriv_symp;
-//	void (Model::*func)(Matrix*,double,Matrix*,Parameters*) = &Model::deriv;
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(param.orb_vec[0],3)/param.mu);
@@ -343,19 +459,204 @@ void Model::single_sat()
 	Matrix Y;
 	Matrix T;
 
-	Matrix init_cond(6);
-	init_cond.at(0) = param.X0[0];
-	init_cond.at(1) = param.X0[1];
-	init_cond.at(2) = param.X0[2];
-	init_cond.at(3) = param.V0[0];
-	init_cond.at(4) = param.V0[1];
-	init_cond.at(5) = param.V0[2];
+	int d = 1;		//dimension of the random space
+	vector<double> linear_space;
+	linear_space = linspace(-0.5,0.5,N);
 
-	euler_symp(func,tspan,init_cond,&param,h,&Y,&T,MAX_ITER);
-//	euler(func,tspan,init_cond,&param,h,&Y,&T,MAX_ITER);
+	Grid grid;
+	for(int i = 0 ; i < d ; i++)
+	{
+		grid.add_node( linear_space );
+	}
+
+	vector< vector<double> > random_space = grid.build_grid();
+
+	vector<double> ic;
+	ic.push_back( param.X0[0] );
+	ic.push_back( param.X0[1] );
+	ic.push_back( param.X0[2] );
+	ic.push_back( param.V0[0] );
+	ic.push_back( param.V0[1] );
+	ic.push_back( param.V0[2] );
+	Matrix init_cond;
+	init_cond.initiate_vector(ic,6,1);
+
+	Parameters rand_param;
+	vector<Matrix> solution;
+	vector<Parameters> param_handler;
+
+	for(int i = 0 ; i < random_space.size() ; i++)
+	{
+		Y.clear();
+		T.clear();
+
+		rand_param.mu = param.mu + 4e12*(random_space[i])[0];
+		rand_param.J2 = param.J2;
+		rand_param.ae = param.ae;
+
+		integ4_symp(func,tspan,init_cond,&rand_param,h,&Y,&T,MAX_ITER);
+
+		solution.push_back( Y );
+		param_handler.push_back(param);
+	}
+
+	Matrix snap_lin;
+	Matrix snap_nonlin;
+	int num_samples = 20;
+	vector<int> rand_index;
+	srand(1);
+	for(int i = 0 ; i < num_samples ; i++)
+		rand_index.push_back( rand() % MAX_ITER );
+
+	for(int i = 0 ; i < random_space.size() ; i++)
+	{
+		for(int j = 0 ; j < rand_index.size() ; j++)
+		{
+			double idx;
+			idx = rand_index[j];
+			snap_lin.add_row( (solution[i]).get_submat(idx,idx+1,0,3) );
+			snap_nonlin.add_row( (solution[i]).get_submat(idx,idx+1,3,6) );
+		}
+	}
+	Matrix U,S,V;
+	snap_lin = snap_lin.tr();
+	snap_lin.svd(&U,&S,&V);
+	
+	double total = 0;
+	for(int i = 0 ; i < S.length() ; i++)
+		total += S.at(i);
+	int iterator = -1;
+	double checker = 0;
+
+	while(checker < (1-tol) )
+	{
+		iterator++;
+		checker += S.at(iterator) / total;
+	}
+
+	phi1 = U.get_submat(0,U.get_num_rows(),0,iterator+1);
+//	phi1 = U;
+
+	snap_nonlin = snap_nonlin.tr();
+	snap_nonlin.svd(&U,&S,&V);
+
+	total = 0;
+	for(int i = 0 ; i < S.length() ; i++)
+		total += S.at(i);
+	iterator = -1;
+	checker = 0;
+
+	while(checker < (1-tol) )
+	{
+		iterator++;
+		checker += S.at(iterator) / total;
+	}
+
+	phi2 = U.get_submat(0,U.get_num_rows(),0,iterator+1);
+//	phi2 = U;
+}
+
+void Model::test_reduced_model()
+{
+	void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int) = &Model::deriv_symp_reduced;
+	double* tspan = new double[2];
+	tspan[0] = 0.0;
+	tspan[1] = 2*M_PI*sqrt(pow(param.orb_vec[0],3)/param.mu);
+	double h = tspan[1]/500;
+	int MAX_ITER = static_cast<int>( tspan[1] / h );
+	Matrix Q,P;
+	Matrix T;
+
+	int N = 5;
+	double tol = 1e-3;
+
+	this->build_reduced_model(N,tol);
+
+	L = phi1.tr() * phi2;
+
+	srand(2);
+	double* random_vec = new double[6];
+	double r;
+	for(int i = 0 ; i < 6 ; i++)
+	{
+		r = (double) rand() / RAND_MAX;
+		random_vec[i] = r - 0.5;
+	}
+	Parameters rand_param;
+	rand_param.mu = param.mu + 4e12*random_vec[0];
+	rand_param.J2 = param.J2;
+	rand_param.ae = param.ae;
+
+	Matrix pos;
+	pos.zeros(3,1);
+	pos.at(0) = param.X0[0];
+	pos.at(1) = param.X0[1];
+	pos.at(2) = param.X0[2];
+
+	Matrix mom;
+	mom.zeros(3,1);
+	mom.at(0) = param.V0[0];
+	mom.at(1) = param.V0[1];
+	mom.at(2) = param.V0[2];
+
+	Matrix a = phi1.tr() * pos;
+	Matrix b = phi2.tr() * mom;
+
+	integ4_symp_reduced(func,tspan,a,b,&rand_param,h,&Q,&P,&T,MAX_ITER);
+
+	Matrix temp;
+	Matrix result;
+	for(int i = 0 ; i < MAX_ITER ; i++)
+	{
+		temp = (phi1 * (Q.get_row(i)).tr()).tr();
+		result.add_row(temp);
+	}
 
 	char path[] = "./data/output.txt";
-	Y.save(path);
+	result.save(path);
+
+	void (Model::*func2)(Matrix*,double,Matrix*,Parameters*,int) = &Model::deriv_symp_test;
+	Matrix Q_exact,P_exact;
+	T.clear();
+	integ4_symp_reduced(func2,tspan,pos,mom,&rand_param,h,&Q_exact,&P_exact,&T,MAX_ITER);
+	char path2[] = "./data/output2.txt";
+	Q_exact.save(path2);
+
+	delete[] tspan;
+	cout << phi1 <<endl;
+	cout << phi2 << endl;
+}
+
+void Model::single_sat()
+{
+	void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int) = &Model::deriv_symp_test;
+	double* tspan = new double[2];
+	tspan[0] = 0.0;
+	tspan[1] = 2*M_PI*sqrt(pow(param.orb_vec[0],3)/param.mu);
+	double h = tspan[1]/500;
+	int MAX_ITER = static_cast<int>( tspan[1] / h );
+	Matrix Q,P;
+	Matrix T;
+
+	Matrix pos;
+	pos.zeros(3,1);
+	pos.at(0) = param.X0[0];
+	pos.at(1) = param.X0[1];
+	pos.at(2) = param.X0[2];
+
+	Matrix mom;
+	mom.zeros(3,1);
+	mom.at(0) = param.V0[0];
+	mom.at(1) = param.V0[1];
+	mom.at(2) = param.V0[2];
+
+	double r = -0.5;
+	cout << r << endl;
+	param.mu = param.mu + 4e12*r;
+	integ4_symp_reduced(func,tspan,pos,mom,&param,h,&Q,&P,&T,MAX_ITER);
+
+	char path[] = "./data/output.txt";
+	Q.save(path);
 
 	delete[] tspan;
 }

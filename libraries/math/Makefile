@@ -1,5 +1,6 @@
 CC=g++
 FLAGS = -O2 -funroll-loops -fomit-frame-pointer -std=c++11
+#FLAGS = -g -std=c++11
 
 OBJECTS=matrix.o
 OUT=../../libs/libmath.a

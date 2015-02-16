@@ -12,7 +12,6 @@
 
 typedef __CLPK_integer integer;
 
-
 using namespace std;
 
 class Matrix
@@ -23,6 +22,9 @@ class Matrix
 		int ncols;
 	public:
 		Matrix();
+		Matrix(int);
+		Matrix(int,char);	// 'c' for column vector 'r' for row vector
+		Matrix(int,int);
 		~Matrix();
 
 		void initiate_array(double*,int,int);
@@ -32,6 +34,8 @@ class Matrix
 		void zeros(int,int);
 		void ones(int,int);
 		void eye(int);
+		void rand(int,int);
+		void rand(int);
 		void clear();
 
 		int get_num_rows();
@@ -43,19 +47,33 @@ class Matrix
 		vector<double>* get_matrix_ptr();
 		Matrix get_row(int);
 		Matrix get_col(int);
+		Matrix get_submat(int,int,int,int);
 
 		void set_row(int,Matrix);
 		void set_col(int,Matrix);
+		void set_submat(int,int,Matrix);
 
 		double& at(int,int);
 		double& at(int);
 		void add_row(Matrix);
 		void add_col(Matrix);
+		void append(Matrix,char);	// 'r' for row-wise append and 'c' for column-wise append
 
 		void operator=(Matrix);
 		Matrix operator+(Matrix);
+		void operator+=(Matrix);
 		Matrix operator-(Matrix);
+		void operator-=(Matrix);
 		Matrix operator*(Matrix);
+		Matrix operator+(double);
+		void operator+=(double);
+		Matrix operator-(double);
+		void operator-=(double);
+		Matrix operator*(double);
+		void operator*=(double);
+		Matrix operator/(double);
+		void operator/=(double);
+
 		Matrix scalar(double);
 		Matrix tr();
 
@@ -64,6 +82,12 @@ class Matrix
 		void svd(vector< vector<double> >*,vector<double>*,vector< vector<double> >*);
 		void svd(Matrix*,Matrix*,Matrix*);
 		Matrix inv();
+		void lu(Matrix*,int*);
+		double det();
+		void eig(Matrix*);
+		void eig(Matrix*,Matrix*,Matrix*);
+		void eig_sym(Matrix*);
+		void eig_sym(Matrix*,Matrix*);
 
 		friend ostream& operator<<(ostream&,Matrix&);
 		void print();
