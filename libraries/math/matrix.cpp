@@ -316,6 +316,28 @@ void Matrix::operator-=(Matrix M)
 
 Matrix Matrix::operator*(Matrix M)
 {
+	assert(ncols == M.nrows);
+	Matrix result;
+	result.nrows = nrows;
+	result.ncols = M.ncols;
+	double temp;
+	for(int i = 0 ; i < nrows ; i++)
+	{
+		for(int j = 0 ; j < M.ncols ; j++)
+		{
+			temp = 0;
+			for(int k = 0 ; k < ncols ; k++)
+			{
+				temp += mat[ i*ncols+k ]*M.mat[k*M.ncols + j];
+			}
+			(result.mat).push_back(temp);
+		}
+	}
+	return result;
+}
+/*
+Matrix Matrix::operator*(Matrix M)
+{
 	assert( ncols == M.nrows );
 	double* mat1 = new double[nrows*ncols];
 	double* mat2 = new double[M.nrows*M.ncols];
@@ -347,6 +369,7 @@ Matrix Matrix::operator*(Matrix M)
 
 	return result;
 }
+*/
 
 Matrix Matrix::operator+( double c )
 {

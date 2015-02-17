@@ -15,4 +15,6 @@ void prog_bar(int,int);
 
 vector<double> get_polar_coord(Matrix*);
 
+Matrix compute_mixed_expansion(int,int); // computes the att the expansion degrees of a mixed polynomial of N th degree in d dimensions
+
 #endif

@@ -97,3 +97,50 @@ vector<double> get_polar_coord(Matrix* X)
 	return r;
 }
 
+Matrix compute_mixed_expansion(int N, int d)
+{
+	Matrix degrees;
+	Matrix instance;
+	instance.zeros(1,d);
+
+	degrees.add_row(instance);
+
+
+	int ptr;
+	int temp;
+	for(int n = 1 ; n < N+1 ; n++)
+	{
+		instance.zeros(1,d);
+		
+		instance.at(0) = n;
+		degrees.add_row(instance);
+
+		ptr = 0;
+		while( instance.at(d-1) != n )
+		{
+			while(ptr != d-1)
+			{
+				instance.at(ptr) -= 1;
+				ptr++;
+				instance.at(ptr) += 1;
+				degrees.add_row(instance);
+			}
+
+			temp = instance.at(ptr);
+			instance.at(ptr) = 0;
+			while( (instance.at(ptr) == 0) && (ptr > 0) )
+				ptr--;
+
+			if( instance.at(ptr) == 0 )
+				instance.at(d-1) = n;
+			else
+			{
+				instance.at(ptr) -= 1;
+				ptr++;
+				instance.at(ptr) = temp + 1;
+				degrees.add_row(instance);
+			}
+		}
+	}
+	return degrees;
+}

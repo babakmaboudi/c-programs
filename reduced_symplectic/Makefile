@@ -1,8 +1,7 @@
 CC=g++
 FLAGS=-O2 -funroll-loops -fomit-frame-pointer -std=c++11
-#FLAGS=-g -std=c++11
 LDFLAGS=-framework accelerate
-OBJECTS= model.o parameters.o tools.o grid.o node.o
+OBJECTS= model.o parameters.o grid.o node.o tools.o
 
 math_dir="../libraries/math"
 STATIC_LIBS=-L../libs -lmath
