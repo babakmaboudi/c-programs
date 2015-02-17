@@ -13,7 +13,8 @@ class Model
 	private:
 		Parameters param;
 	public:
-		void sv2oe(double*,double*,double*);
+		void sv2oe(double*,double*,double,double*);
+		void set_parameters(double,Parameters*);
 		void initiate_from_file(char*);
 
 		void deriv(Matrix*,double,Matrix*,Parameters*);
@@ -25,6 +26,7 @@ class Model
 		void integ4_symp(void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int),double*,Matrix,Parameters*,double,Matrix*,Matrix*,int);
 
 		void single_sat();
+		void test();
 };
 
 #endif

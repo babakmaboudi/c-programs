@@ -8,6 +8,7 @@ int main(int argc, char** argv)
 	char path[] = "param.txt";
 	Model model;
 	model.initiate_from_file(path);
-	model.single_sat();
+//	model.single_sat();
+	model.test();
 	return 0;
 }
