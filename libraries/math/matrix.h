@@ -34,6 +34,7 @@ class Matrix
 		void zeros(int,int);
 		void ones(int,int);
 		void eye(int);
+		void jay(int);
 		void rand(int,int);
 		void rand(int);
 		void clear();

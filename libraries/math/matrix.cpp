@@ -85,6 +85,18 @@ void Matrix::eye(int m)
 		at(i,i) = 1.0;	
 }
 
+void Matrix::jay(int n)
+{
+	nrows = 2*n;
+	ncols = 2*n;
+	mat = vector<double>( 4*n*n, 0.0 );
+	for( int i=0 ; i<n ; i++ )
+	{
+		at(i, n+i) = 1.0;
+		at(n+i, i) = -1.0;
+	}
+}
+
 void Matrix::rand(int m, int n)
 {
 	nrows = m;
@@ -335,6 +347,7 @@ Matrix Matrix::operator*(Matrix M)
 	}
 	return result;
 }
+
 /*
 Matrix Matrix::operator*(Matrix M)
 {

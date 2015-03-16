@@ -405,6 +405,8 @@ void Model::test()
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
 	tspan[1] = 2*M_PI*sqrt(pow(P0.orb_vec[0],3)/P0.mu);
+	cout << 2*M_PI*sqrt(pow(P0.orb_vec[0],3)/P0.mu << endl;
+			getchar();
 	double h = tspan[1]/500;
 	int MAX_ITER = static_cast<int>( tspan[1] / h );
 	Matrix Y;
