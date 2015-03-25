@@ -932,15 +932,39 @@ void Matrix::eig_sym(Matrix* eigval, Matrix* eigvec)
 
 ostream& operator<<(ostream& os,Matrix& M)
 {
-	cout << "---------------------" << endl;
-	for(int i = 0 ; i < M.nrows ; i++)
+	cout << "---------------------";
+	int col_size = M.ncols;
+	int print_col_size = 7;
+	int complete = col_size / print_col_size;
+	int rem = col_size - complete*print_col_size;
+
+	for(int i=0 ; i<complete ; i++)
 	{
-		for(int j = 0 ; j < M.ncols ; j++)
+		int col_offset = i*print_col_size;
+		cout << endl << "  Columns " << col_offset << " through " << col_offset+print_col_size-1 << endl << endl;
+		for(int j=0 ; j<M.nrows ; j++)
 		{
-			cout.width(17);
-			cout << std::setprecision(10) << M.mat[i*M.ncols + j];
+			for(int k=0 ; k<print_col_size ; k++)
+			{
+				cout.width(11);
+				cout << std::setprecision(4) << M.at(j,col_offset+k);
+			}
+			cout << endl;
 		}
-		cout << endl;
+	}
+	if(rem != 0)
+	{
+		int col_offset = complete*print_col_size;
+		cout << endl << "  Columns " << col_offset << " through " << col_offset+rem-1 << endl << endl;
+		for(int j=0 ; j<M.nrows ; j++)
+		{
+			for(int k=0 ; k<rem ; k++)
+			{
+				cout.width(11);
+				cout << std::setprecision(4) << M.at(j,col_offset+k);
+			}
+			cout << endl;
+		}
 	}
 	cout << "---------------------";
 	return os;
@@ -948,18 +972,17 @@ ostream& operator<<(ostream& os,Matrix& M)
 
 void Matrix::print()
 {
-	if(mat.size() == 0)
-		cout << "No matrix found!" << endl;
-	else
+	cout << "---------------------" << endl;
+	for(int i = 0 ; i < nrows ; i++)
 	{
-		for(int i = 0 ; i < nrows ; i++)
+		for(int j = 0 ; j < ncols ; j++)
 		{
-			for(int j = 0 ; j < ncols ; j++)
-				cout << mat[i*ncols + j] << " ";
-			cout << endl;
+			cout.width(17);
+			cout << std::setprecision(10) << mat[i*ncols + j];
 		}
-		cout << "---------------------------" << endl;
+		cout << endl;
 	}
+	cout << "---------------------";
 }
 
 void Matrix::save(char* path)

@@ -10,7 +10,6 @@ int main(int argc, char** argv)
 	Model model;
 	model.initiate_from_file(path);
 	model.test_reduced_model();
-//	model.build_reduced_model(5);
 //	model.single_sat();
 	return 0;
 }
