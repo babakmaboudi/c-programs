@@ -1,35 +1,15 @@
 function script()
 	close all;
-	
-	data = load('./data/data.txt');
-	centers = load('./data/centers.txt');
-	labels = load('./data/labels.txt');
-	
-	color_code = [ 'b' 'r' 'g' 'k' 'm' 'y' , 'c'];
+	data = load('./data/output.txt');
+	exact = load('./data/output2.txt');
 
-	figure;
+	mat = (data(2:end,1:3) - exact(1:end-1,:))';
+	sqrt( sum( mat.^2 ) )'
+
+	figure
 	hold on
-	labels = labels + 1;
-	for i = 9 : 9
-		[ IDX c ] = find(labels == i);
-		for j = 1 : length(IDX)
-			plot3( data(IDX(j) , 1) , data(IDX(j) , 2) , data(IDX(j) , 3) , [ color_code( mod(i,7) + 1 ), '*'] );
-		end
-		plot3( centers(i,1) , centers(i,2) , centers(i,3), 'b*' );
-	end
-
-	for i = 4 : 4
-		[ IDX c ] = find(labels == i);
-		for j = 1 : length(IDX)
-			plot3( data(IDX(j) , 1) , data(IDX(j) , 2) , data(IDX(j) , 3) , [ color_code( mod(i,7) + 1 ), '*'] );
-		end
-		plot3( centers(i,1) , centers(i,2) , centers(i,3) , 'b*' );
-	end
-	for i = 6 : 6
-		[ IDX c ] = find(labels == i);
-		for j = 1 : length(IDX)
-			plot3( data(IDX(j) , 1) , data(IDX(j) , 2) , data(IDX(j) , 3) , [ color_code( mod(i,7) + 1 ), '*'] );
-		end
-		plot3( centers(i,1) , centers(i,2) , centers(i,3) , 'b*' );
+	for i = 1 : length(data)
+		plot3(data(i,1) , data(i,2) , data(i,3) , 'b+');
+		plot3(exact(i,1) , exact(i,2) , exact(i,3) , 'rx');
 	end
 	hold off

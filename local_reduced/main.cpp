@@ -1,17 +1,16 @@
 #include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
 #include "model.h"
-#include <cmath>
 
 using namespace std;
 
 int main(int argc, char** argv)
 {
-	char file_path[] = "param.txt";
+	srand(0);
+	char path[] = "param.txt";
 	Model model;
-	model.initiate_from_file(file_path);
-	model.TRM_params();
+	model.initiate_from_file(path);
+	model.test_reduced_model();
+//	model.build_reduced_model(5,1e-10);
+//	model.single_sat();
 	return 0;
 }
