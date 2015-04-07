@@ -13,6 +13,7 @@ struct Particle
 	double vel_y;
 	double acc_x;
 	double acc_y;
+	int patch_number;
 };
 
 #endif

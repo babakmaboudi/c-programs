@@ -1,10 +1,18 @@
 function script()
 	close all
-	points = load('./data/positions.txt')
+	all = load('./data/positions.txt');
 
-	figure;
-	hold on
-	for i = 1 : length(points)
-		plot(points(i,1),points(i,2),'b*');
+	h = figure;
+	for i = 1 : 499
+		st = (i-1)*100 + 1;
+		en = st + 100;
+		points = all(st:en,:);
+		hold on
+		for j = 1 : 100
+			plot(points(j,1),points(j,2),'bo');
+		end
+		drawnow;
+		hold off
+		plot(0,0);
 	end
-	hold off
+	
