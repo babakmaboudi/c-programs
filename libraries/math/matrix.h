@@ -79,6 +79,7 @@ class Matrix
 		Matrix tr();
 
 		double norm2();
+		void linspace(double,double,int);
 
 		void svd(vector< vector<double> >*,vector<double>*,vector< vector<double> >*);
 		void svd(Matrix*,Matrix*,Matrix*);

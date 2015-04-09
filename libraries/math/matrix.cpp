@@ -480,6 +480,20 @@ double Matrix::norm2()
 	return sqrt(n);
 }
 
+void Matrix::linspace(double min, double max,int n)
+{
+	vector<double> result;
+	double temp;
+
+	for(int i = 0 ; i <= n-2 ; i++)
+	{
+		temp = min + i*(max-min)/(floor((double)n) - 1) ;
+		result.push_back( temp );
+	}
+	result.push_back(max);
+	initiate_vector(result,result.size(),1);
+}
+
 void Matrix::svd(vector< vector<double> >* U_mat, vector<double>* S_vec, vector< vector<double> >* V_mat)
 {
 	double* A = new double[nrows*ncols];
