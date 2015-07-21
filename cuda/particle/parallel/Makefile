@@ -1,6 +1,6 @@
 CC=nvcc
 FLAGS=-arch=sm_20
-OBJECTS = main.o hostfunctions.o
+OBJECTS = main.o hostfunctions.o devicefunctions.o
 
 gpuCode: $(OBJECTS)
 	$(CC) $(FLAGS) $(OBJECTS) -o $@.out

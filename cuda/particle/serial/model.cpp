@@ -177,6 +177,7 @@ void Model::move( int idx )
 	//
 	//  bounce from walls
 	//
+
 	while( par[idx].pos_x < 0 || par[idx].pos_x > size )
 	{
 		par[idx].pos_x  = (par[idx].pos_x < 0) ? -par[idx].pos_x : 2*size-par[idx].pos_x;
@@ -268,6 +269,9 @@ void Model::add_to_mat()
 		row.at(0) = par[i].pos_x;
 		row.at(1) = par[i].pos_y;
 		result.add_row(row);
+		row.at(0) = par[i].vel_x;
+		row.at(1) = par[i].vel_y;
+		velocity.add_row(row);
 	}
 }
 
@@ -275,4 +279,7 @@ void Model::save()
 {
 	char path[] = "./data/positions.txt";
 	result.save(path);
+	char path2[] = "./data/velocity.txt";
+	result.save(path2);
+
 }

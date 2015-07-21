@@ -27,6 +27,7 @@ class Model
 		double dt;
 
 		Matrix result;
+		Matrix velocity;
 	public:
 		Model();
 

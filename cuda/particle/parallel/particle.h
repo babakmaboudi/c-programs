@@ -11,7 +11,7 @@ struct Particle
 	float vel_y;
 	float acc_x;
 	float acc_y;
-	int patch_number;
+	int cell_number;
 };
 
 #endif

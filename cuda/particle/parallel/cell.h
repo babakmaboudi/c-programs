@@ -7,6 +7,7 @@ struct Cell
 	float south;
 	float east;
 	float west;
+	int num_particles;
 };
 
 #endif

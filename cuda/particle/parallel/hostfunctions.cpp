@@ -178,5 +178,3 @@ int* randperm(int n)
 	}
 	return perm;
 }
-
-

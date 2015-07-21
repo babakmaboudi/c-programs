@@ -78,7 +78,9 @@ class Matrix
 		Matrix scalar(double);
 		Matrix tr();
 
+		double trace();
 		double norm2();
+		double frobenius();
 		void linspace(double,double,int);
 
 		void svd(vector< vector<double> >*,vector<double>*,vector< vector<double> >*);
@@ -94,6 +96,7 @@ class Matrix
 		friend ostream& operator<<(ostream&,Matrix&);
 		void print();
 		void save(char*);
+		void open(int,int,char*);
 };
 
 #endif

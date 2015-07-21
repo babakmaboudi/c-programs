@@ -472,12 +472,27 @@ Matrix Matrix::tr()
 	return result;
 }
 
+double Matrix::trace()
+{
+	int min = ( nrows < ncols ) ? nrows : ncols;
+	
+	double res = 0;
+	for(int i=0 ; i<min ; i++)
+		res += at(i,i);
+	return res;
+}
+
 double Matrix::norm2()
 {
 	double n = 0;
 	for(int i = 0 ; i < mat.size() ; i++)
 		n += mat[i]*mat[i];
 	return sqrt(n);
+}
+
+double Matrix::frobenius()
+{
+	return sqrt( (this->tr() * (*this)).trace() );
 }
 
 void Matrix::linspace(double min, double max,int n)
@@ -1011,4 +1026,19 @@ void Matrix::save(char* path)
 		file << endl;
 	}
 	file.close();	
+}
+
+void Matrix::open(int m, int n, char* path)
+{
+	ifstream file;
+	file.open(path);
+
+	this->zeros(m,n);
+
+	for(int i=0 ; i<nrows ; i++)
+	{
+		for(int j=0 ; j<ncols ; j++)
+			file >> this->at(i,j);
+	}
+	file.close();
 }
