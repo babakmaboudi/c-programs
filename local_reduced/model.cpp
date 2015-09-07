@@ -410,7 +410,7 @@ void Model::build_reduced_model(int N, double tol)
 		Parameters temp_param;
 		set_parameters(param.mu + 4e12*(random_space[i])[0], &temp_param);
 		tspan[0] = 0.0;
-		tspan[1] = M_PI*sqrt(pow(temp_param.orb_vec[0],3)/temp_param.mu);
+		tspan[1] = 2*M_PI*sqrt(pow(temp_param.orb_vec[0],3)/temp_param.mu);
 		double h = tspan[1]/MAX_ITER;
 
 		Matrix init_pos(3);
@@ -542,7 +542,7 @@ void Model::test_reduced_model()
 	void (Model::*func)(Matrix*,double,Matrix*,Parameters*,int) = &Model::deriv_symp_reduced;
 	double* tspan = new double[2];
 	tspan[0] = 0.0;
-	tspan[1] = M_PI*sqrt(pow(P0.orb_vec[0],3)/P0.mu);
+	tspan[1] = 2*M_PI*sqrt(pow(P0.orb_vec[0],3)/P0.mu);
 	int MAX_ITER = 500;
 	double h = tspan[1]/MAX_ITER;
 	Matrix Q,P;

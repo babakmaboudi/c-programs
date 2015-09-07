@@ -8,8 +8,9 @@ function script()
 
 	figure
 	hold on
-	for i = 1 : length(data)
-		plot3(data(i,1) , data(i,2) , data(i,3) , 'b+');
-		plot3(exact(i,1) , exact(i,2) , exact(i,3) , 'rx');
-	end
+
+	plot3(data(:,1),data(:,2),data(:,3),'b+')
+	plot3(exact(:,1),exact(:,2),exact(:,3),'rx')
+
+
 	hold off
