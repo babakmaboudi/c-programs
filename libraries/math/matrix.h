@@ -32,6 +32,7 @@ class Matrix
 		void initiate_vector_vector(vector< vector<double> >);
 
 		void zeros(int,int);
+		void zeros(int);
 		void ones(int,int);
 		void eye(int);
 		void jay(int);
@@ -54,11 +55,16 @@ class Matrix
 		void set_col(int,Matrix);
 		void set_submat(int,int,Matrix);
 
+		double& operator()(int,int);
+		double& operator()(int);
 		double& at(int,int);
 		double& at(int);
 		void add_row(Matrix);
 		void add_col(Matrix);
 		void append(Matrix,char);	// 'r' for row-wise append and 'c' for column-wise append
+
+		double max(int*);
+		double min(int*);
 
 		void operator=(Matrix);
 		Matrix operator+(Matrix);
@@ -74,6 +80,9 @@ class Matrix
 		void operator*=(double);
 		Matrix operator/(double);
 		void operator/=(double);
+
+		double inner(Matrix*);
+		double bilinear(Matrix*);
 
 		Matrix scalar(double);
 		Matrix tr();
@@ -93,6 +102,7 @@ class Matrix
 		void eig_sym(Matrix*);
 		void eig_sym(Matrix*,Matrix*);
 
+		void operator()();
 		friend ostream& operator<<(ostream&,Matrix&);
 		void print();
 		void save(char*);

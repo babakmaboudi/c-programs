@@ -34,12 +34,12 @@ Model::Model()
 	initUcell.set(10,10,10);
 	real c = 1. / pow (density, 1./3.);
 	region.set(initUcell.x()*c , initUcell.y()*c , initUcell.z()*c);
-	initUchain.set(2,1,1);
+	initUchain.set(1,1,1);
 	num_chains = 2*initUchain.x()*initUchain.y()*initUchain.z();
 	if(num_chains == 2)
 		num_chains = 1;
 	bond_lim = 2.1;
-	chain_length = 8;
+	chain_length = 16;
 	vtk_count = 0;
 	dt = 0.0005;
 	num_mols = initUcell.x()*initUcell.y()*initUcell.z() + num_chains*chain_length;
@@ -118,7 +118,7 @@ void Model::init_coords_chain()
 		}
 	}
 	boundary_conditions();
-
+/*
 	Vec gap(region.x()/initUcell.x() , region.y()/initUcell.y() , region.z()/initUcell.z());
 	for(int nz=0 ; nz<initUcell.z() ; nz++)
 	{
@@ -146,6 +146,7 @@ void Model::init_coords_chain()
 			}
 		}
 	}
+*/
 	num_mols = mols.size();
 }
 
@@ -789,12 +790,14 @@ void Model::single_step()
 	adjust_quats();
 	boundary_conditions();
 */
-
+	
+//	leap_frog(1);
 	predictor_step();
 	boundary_conditions();
 	compute_forces();
 	compute_bonded_forces();
 	corrector_step();
+//	leap_frog(2);
 	boundary_conditions();
 
 /*

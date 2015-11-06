@@ -68,6 +68,11 @@ void Matrix::zeros(int m, int n)
 	mat = vector<double>( m*n, 0.0 );
 }
 
+void Matrix::zeros(int m)
+{
+	zeros(m,1);
+}
+
 void Matrix::ones(int m, int n)
 {
 	nrows = m;
@@ -219,6 +224,17 @@ void Matrix::set_submat(int r, int c, Matrix M)
 	}
 }
 
+double& Matrix::operator()(int m, int n)
+{
+	return mat[m*ncols + n];
+}
+
+double& Matrix::operator()(int pos)
+{
+	assert( (nrows == 1) || (ncols == 1) );
+	return mat[pos];	
+}
+
 double& Matrix::at( int m, int n )
 {
 	return mat[m*ncols + n];
@@ -282,6 +298,38 @@ void Matrix::append(Matrix M, char ind)
 		this->append( M.tr() , 'r' );
 		(*this) = this->tr();
 	}
+}
+
+double Matrix::max(int* idx)
+{
+	assert(nrows == 1 || ncols == 1);
+	double res = at(0);
+	(*idx) = 0;
+	for(int i=1 ; i<length() ; i++)
+	{
+		if(at(i) > res)
+		{
+			res = at(i);
+			(*idx) = i;
+		}
+	}
+	return res;
+}
+
+double Matrix::min(int* idx)
+{
+	assert(nrows == 1 || ncols == 1);
+	double res = at(0);
+	(*idx) = 0;
+	for(int i=1 ; i<length() ; i++)
+	{
+		if(at(i) < res)
+		{
+			res = at(i);
+			(*idx) = i;
+		}
+	}
+	return res;
 }
 
 void Matrix::operator=(Matrix M)
@@ -450,6 +498,26 @@ void Matrix::operator/=( double c )
 	for( int i=0 ; i<nrows ; i++ )
 		for( int j=0 ; j<ncols ; j++ )
 			at(i,j) /= c;
+}
+
+double Matrix::inner(Matrix* vec)
+{
+	assert( (nrows == vec->nrows) && (ncols == vec->ncols) && ( (nrows == 1) || (ncols ==1) ) );
+	double res =0.;
+	for(int i=0 ; i<length() ; i++)
+	{
+		res += at(i)*vec->at(i);
+	}
+	return res;
+}
+
+double Matrix::bilinear(Matrix* vec)
+{
+	assert( (nrows == vec->nrows) && (ncols == vec->ncols) && ( (nrows == 1) || (ncols ==1) ) && (length()%2 == 0) );
+	Matrix J;
+	J.jay(length()/2);
+	Matrix res = tr() * J * (*vec);
+	return res(0,0);
 }
 
 Matrix Matrix::scalar(double c)
@@ -957,6 +1025,45 @@ void Matrix::eig_sym(Matrix* eigval, Matrix* eigvec)
 			eigvec->at(j,i) = A[ i*nrows + j ];
 	delete[] A;
 	delete[] W;
+}
+
+void Matrix::operator()()
+{
+	cout << "---------------------";
+	int col_size = ncols;
+	int print_col_size = 7;
+	int complete = col_size / print_col_size;
+	int rem = col_size - complete*print_col_size;
+
+	for(int i=0 ; i<complete ; i++)
+	{
+		int col_offset = i*print_col_size;
+		cout << endl << "  Columns " << col_offset << " through " << col_offset+print_col_size-1 << endl << endl;
+		for(int j=0 ; j< nrows ; j++)
+		{
+			for(int k=0 ; k<print_col_size ; k++)
+			{
+				cout.width(11);
+				cout << std::setprecision(4) << at(j,col_offset+k);
+			}
+			cout << endl;
+		}
+	}
+	if(rem != 0)
+	{
+		int col_offset = complete*print_col_size;
+		cout << endl << "  Columns " << col_offset << " through " << col_offset+rem-1 << endl << endl;
+		for(int j=0 ; j<nrows ; j++)
+		{
+			for(int k=0 ; k<rem ; k++)
+			{
+				cout.width(11);
+				cout << std::setprecision(4) << at(j,col_offset+k);
+			}
+			cout << endl;
+		}
+	}
+	cout << "---------------------" << endl;
 }
 
 ostream& operator<<(ostream& os,Matrix& M)
